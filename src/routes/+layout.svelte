@@ -3,7 +3,7 @@
 </script>
 
 <svelte:head>
-  <title>ITI</title>
+  <title>UNSWKC</title>
 </svelte:head>
 
 <slot />
