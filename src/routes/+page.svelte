@@ -38,7 +38,6 @@
               goto('/home')
             })
             .catch(async () => {
-              console.log(user.uid)
               await setDoc(doc(db, 'user', user.uid), {
                 _id: user.uid,
                 name: user.displayName,
