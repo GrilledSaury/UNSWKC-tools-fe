@@ -34,17 +34,18 @@
           // IdP data available using getAdditionalUserInfo(result)
           // ...
           getDocs(collection(db, 'user'))
-            .then(res => {
-              console.log(res)
+            .then(() => {
+              goto('/home')
             })
-            .catch(() => {
-              setDoc(doc(db, 'user', user.uid), {
+            .catch(async () => {
+              console.log(user.uid)
+              await setDoc(doc(db, 'user', user.uid), {
                 _id: user.uid,
                 name: user.displayName,
                 email: user.email
               })
+              goto('/home')
             })
-          goto('/home')
         }).catch((error) => {
           // Handle Errors here.
           const errorCode = error.code;
