@@ -1,31 +1,91 @@
 <script>
   import "$lib/firebase.js"
 
-  import { getAuth, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+  import {
+    getAuth,
+    signInWithPopup,
+    GoogleAuthProvider,
+    signInWithEmailAndPassword,
+    fetchSignInMethodsForEmail
+  } from "firebase/auth";
 
-  const provider = new GoogleAuthProvider();
+  import { goto } from '$app/navigation'
 
-  const auth = getAuth();
-  signInWithPopup(auth, provider)
-    .then((result) => {
-      // This gives you a Google Access Token. You can use it to access the Google API.
-      const credential = GoogleAuthProvider.credentialFromResult(result);
-      const token = credential.accessToken;
-      // The signed-in user info.
-      const user = result.user;
-      // IdP data available using getAdditionalUserInfo(result)
-      // ...
-      console.log(token, user)
-    }).catch((error) => {
-      // Handle Errors here.
-      const errorCode = error.code;
-      const errorMessage = error.message;
-      // The email of the user's account used.
-      const email = error.customData.email;
-      // The AuthCredential type that was used.
-      const credential = GoogleAuthProvider.credentialFromError(error);
-      // ...
-    });
+  let hint = $state('')
+  let email = $state('')
+  let signInMode = $state(0) // 0 for start, 1 for signing up, 2 for signing in
+
+  async function loginWithEmail () {
+
+    if (signInMode === 0) {
+      try {
+        fetchSignInMethodsForEmail(email)
+        signInMode = 2
+        hint = `Signing in ${email}...`
+      } catch (err) {
+        signInMode = 1
+        hint = `Signing up for ${email}...`
+      }
+
+      return
+    }
+
+    // TODO: display password inputs
+
+    // const auth = getAuth();
+    // signInWithEmailAndPassword(auth, email, password)
+    //   .then((userCredential) => {
+    //     // Signed in 
+    //     const user = userCredential.user;
+    //     // ...
+    //     console.log(user)
+    //   })
+    //   .catch((error) => {
+    //     const errorCode = error.code;
+    //     const errorMessage = error.message;
+    //   });
+
+    goto('/home')
+  }
+
+  async function loginWithGoogle () {
+    const provider = new GoogleAuthProvider();
+
+    const auth = getAuth();
+      signInWithPopup(auth, provider)
+        .then((result) => {
+          // This gives you a Google Access Token. You can use it to access the Google API.
+          const credential = GoogleAuthProvider.credentialFromResult(result);
+          const token = credential.accessToken;
+          // The signed-in user info.
+          const user = result.user;
+          // IdP data available using getAdditionalUserInfo(result)
+          // ...
+          console.log(token, user)
+          goto('/home')
+        }).catch((error) => {
+          // Handle Errors here.
+          const errorCode = error.code;
+          const errorMessage = error.message;
+          // The email of the user's account used.
+          const email = error.customData.email;
+          // The AuthCredential type that was used.
+          const credential = GoogleAuthProvider.credentialFromError(error);
+          console.log(errorMessage)
+        });
+  }
+
 </script>
 
-<p>home</p>
+<div class="h-screen w-screen bg-gray-100 flex flex-col items-center justify-center">
+  <div class="text-2xl font-bold my-4 w-4/5 md:w-1/2">UNSWKC-tools</div>
+  <div class="text-gray-500 my-2 w-4/5 md:w-1/2">{hint}</div>
+  <div class="w-4/5 md:w-1/2">
+    <input class="my-2 p-1 w-full" placeholder="Email (use Gmail to join our mailing list)" bind:value={email}>
+  </div>
+  <div class="flex flex-col w-4/5 md:w-1/2 justify-center">
+    <button class="rounded my-2 px-4 py-1 bg-blue-500 text-white shadow whitespace-nowrap" onclick={loginWithEmail}>Sign up / Sign in</button>
+    <button class="rounded my-2 px-4 py-1 bg-white text-blue-500 shadow flex items-center justify-center whitespace-nowrap" onclick={loginWithGoogle}>Continue with Google account</button>
+    <button class="rounded my-2 px-4 py-1 bg-white text-gray-500 shadow whitespace-nowrap">Continue without signing in</button>
+  </div>
+</div>
