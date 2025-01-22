@@ -1,3 +1,1 @@
-# UNSW Kendo Club Affair System Front End
-
-This project is intended to reduce repeatant staff works.
+# UNSW Kendo Club Tools Front End
