@@ -6,10 +6,7 @@
     signInWithPopup,
     GoogleAuthProvider,
     signInWithEmailAndPassword,
-    fetchSignInMethodsForEmail,
-
-    SignInMethod
-
+    createUserWithEmailAndPassword,
   } from "firebase/auth";
 
   import { goto } from '$app/navigation'
@@ -24,32 +21,42 @@
     const auth = getAuth();
 
     if (signInMode === 0) {
-      const res = await fetchSignInMethodsForEmail(auth, email)
-      if (res.length)  {
-        signInMode = 2
-        hint = `Signing in ${email}...`
-      } else {
-        signInMode = 1
-        hint = `Signing up for ${email}...`
-      }
+      // TODO: check if user exists
       return
     }
 
     // TODO: display password inputs
 
-    // signInWithEmailAndPassword(auth, email, password)
-    //   .then((userCredential) => {
-    //     // Signed in 
-    //     const user = userCredential.user;
-    //     // ...
-    //     console.log(user)
-    //   })
-    //   .catch((error) => {
-    //     const errorCode = error.code;
-    //     const errorMessage = error.message;
-    //   });
+    if (signInMode === 1) {
+      // TODO: check confirmed password
+      createUserWithEmailAndPassword(auth, email, password)
+        .then((userCredential) => {
+          // Signed up 
+          const user = userCredential.user;
+          console.log(user)
+          goto('/home')
+        })
+        .catch((error) => {
+          const errorCode = error.code;
+          const errorMessage = error.message;
+          console.log(error.message)
+        });
+    }
 
-    goto('/home')
+    if (signInMode === 2) {
+      signInWithEmailAndPassword(auth, email, password)
+        .then((userCredential) => {
+          // Signed in 
+          const user = userCredential.user;
+          console.log(user)
+          goto('/home')
+        })
+        .catch((error) => {
+          const errorCode = error.code;
+          const errorMessage = error.message;
+          console.log(error.message)
+        });
+    }
   }
 
   async function loginWithGoogle () {
