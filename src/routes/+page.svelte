@@ -6,33 +6,37 @@
     signInWithPopup,
     GoogleAuthProvider,
     signInWithEmailAndPassword,
-    fetchSignInMethodsForEmail
+    fetchSignInMethodsForEmail,
+
+    SignInMethod
+
   } from "firebase/auth";
 
   import { goto } from '$app/navigation'
 
   let hint = $state('')
   let email = $state('')
+  let password = $state('')
+  let confirmPasswrod = $state('')
   let signInMode = $state(0) // 0 for start, 1 for signing up, 2 for signing in
 
   async function loginWithEmail () {
+    const auth = getAuth();
 
     if (signInMode === 0) {
-      try {
-        fetchSignInMethodsForEmail(email)
+      const res = await fetchSignInMethodsForEmail(auth, email)
+      if (res.length)  {
         signInMode = 2
         hint = `Signing in ${email}...`
-      } catch (err) {
+      } else {
         signInMode = 1
         hint = `Signing up for ${email}...`
       }
-
       return
     }
 
     // TODO: display password inputs
 
-    // const auth = getAuth();
     // signInWithEmailAndPassword(auth, email, password)
     //   .then((userCredential) => {
     //     // Signed in 
@@ -79,9 +83,17 @@
 
 <div class="h-screen w-screen bg-gray-100 flex flex-col items-center justify-center">
   <div class="text-2xl font-bold my-4 w-4/5 md:w-1/2">UNSWKC-tools</div>
-  <div class="text-gray-500 my-2 w-4/5 md:w-1/2">{hint}</div>
+  {#if signInMode}
+    <div class="text-gray-500 my-2 w-4/5 md:w-1/2 whitespace-nowrap">{hint}</div>
+  {/if}
   <div class="w-4/5 md:w-1/2">
-    <input class="my-2 p-1 w-full" placeholder="Email (use Gmail to join our mailing list)" bind:value={email}>
+    <input class="my-2 p-1 w-full" placeholder="Email (use Gmail to join our mailing list)" bind:value={email} onchange={() => { signInMode = 0 }}>
+    {#if signInMode}
+      <input class="my-2 p-1 w-full" placeholder="password" type="password" bind:value={password}>
+      {#if signInMode === 1}
+        <input class="my-2 p-1 w-full" placeholder="confirm password" type="password" bind:value={confirmPasswrod}>
+      {/if}
+    {/if}
   </div>
   <div class="flex flex-col w-4/5 md:w-1/2 justify-center">
     <button class="rounded my-2 px-4 py-1 bg-blue-500 text-white shadow whitespace-nowrap" onclick={loginWithEmail}>Sign up / Sign in</button>
