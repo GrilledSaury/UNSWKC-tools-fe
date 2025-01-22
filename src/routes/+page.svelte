@@ -7,9 +7,22 @@
     GoogleAuthProvider,
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
-  } from "firebase/auth";
+  } from "firebase/auth"
+
+  import { getFunctions, httpsCallable, connectFunctionsEmulator } from "firebase/functions"
 
   import { goto } from '$app/navigation'
+
+  // test calling functions
+
+  let functions = getFunctions()
+
+  connectFunctionsEmulator(functions, "localhost", 5001); // Replace 5001 with your emulator port\
+
+  const test = httpsCallable(functions, 'test')
+
+  test({ 'k': 'v' }).then(res => { console.log(res) })
+  // end test
 
   let hint = $state('')
   let email = $state('')
