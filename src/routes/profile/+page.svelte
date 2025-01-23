@@ -1,5 +1,4 @@
 <script>
-  import { getAuth } from "firebase/auth"
   import { getDoc, doc, updateDoc } from "firebase/firestore"
   import { db } from "../../lib/firebase"
   import user from "../../lib/auth"
@@ -21,6 +20,7 @@
     try {
       const profileDoc = doc(db, 'user', $user.uid)
       await updateDoc(profileDoc, profile)
+      Swal.fire('Successfully updated!', '', 'success')
     } catch (err) {
       console.log(err)
     }

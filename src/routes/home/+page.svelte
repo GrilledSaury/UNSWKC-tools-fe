@@ -1,5 +1,4 @@
 <script>
-  import { getAuth } from "firebase/auth"
   import { getDoc, doc } from "firebase/firestore"
   import { db } from "../../lib/firebase"
   import Icon from "heroicons-for-svelte"
