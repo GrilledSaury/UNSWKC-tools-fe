@@ -9,7 +9,7 @@
     createUserWithEmailAndPassword,
   } from "firebase/auth"
 
-  import { collection, setDoc, getDocs, doc } from "firebase/firestore"
+  import { collection, setDoc, getDocs, doc, getDoc } from "firebase/firestore"
   import { db } from '../lib/firebase'
 
   import { goto } from '$app/navigation'
@@ -33,18 +33,17 @@
           const user = res.user;
           // IdP data available using getAdditionalUserInfo(result)
           // ...
-          getDocs(collection(db, 'user'))
-            .then(() => {
-              goto('/home')
+          const docRef = doc(db, 'user', user.uid)
+          const docSnap = await getDoc(docRef)
+          if (docSnap.exists()) return goto('/home')
+          else {
+            await setDoc(docRef, {
+              _id: user.uid,
+              name: user.displayName,
+              email: user.email
             })
-            .catch(async () => {
-              await setDoc(doc(db, 'user', user.uid), {
-                _id: user.uid,
-                name: user.displayName,
-                email: user.email
-              })
-              goto('/home')
-            })
+            goto('/home')
+          }
         }).catch((error) => {
           // Handle Errors here.
           const errorCode = error.code;

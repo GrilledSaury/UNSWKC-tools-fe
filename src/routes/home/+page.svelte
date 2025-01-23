@@ -1,6 +1,6 @@
 <script>
   import { getAuth } from "firebase/auth";
-  import { collection, getDocs } from "firebase/firestore";
+  import { getDoc, doc } from "firebase/firestore";
   import { db } from "../../lib/firebase";
 
   import { goto } from '$app/navigation'
@@ -9,13 +9,15 @@
   const authUser = auth.currentUser;
   let user = $state({ name: '' })
   if (authUser === null) goto('/')
-  getDocs(collection(db, 'user'))
-    .then(querySnapshot => {
-      user = querySnapshot.docs[0].data()
-    })
-    .catch(err => {
-      console.log(err)
-    })
+
+  async function loadUser () {
+    const docRef = doc(db, 'user', authUser.uid)
+    const docSnap = await getDoc(docRef)
+    if (docSnap.exists()) user = docSnap.data()
+    else goto('/')
+  }
+
+  loadUser()
 
   async function toProfile () {
     goto('/profile')
