@@ -1,6 +1,6 @@
 <script>
   import { getAuth } from 'firebase/auth'
-	import { db } from '../../../lib/firebase'
+	import { db } from '$lib/firebase'
 	import { getDoc, doc } from 'firebase/firestore'
 	import { goto } from '$app/navigation'
 

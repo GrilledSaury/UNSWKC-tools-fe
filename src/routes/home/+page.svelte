@@ -1,5 +1,5 @@
 <script>
-  import { db } from '../../lib/firebase'
+  import { db } from '$lib/firebase'
   import { getDoc, doc } from "firebase/firestore"
   import Icon from "heroicons-for-svelte"
   import { UserCircle, AcademicCap, Adjustments } from "heroicons-for-svelte/icons/solid"

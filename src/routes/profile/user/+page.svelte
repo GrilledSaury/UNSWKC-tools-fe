@@ -4,7 +4,7 @@
   import Swal from "sweetalert2"
   import { goto } from '$app/navigation'
   import { getAuth } from "firebase/auth"
-  import { db } from '../../../lib/firebase'
+  import { db } from '$lib/firebase'
 
   const auth = getAuth()
   const user = auth.currentUser
