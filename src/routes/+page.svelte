@@ -1,8 +1,7 @@
 <script>
-  import "$lib/firebase.js"
+  import { auth } from "$lib/firebase"
 
   import {
-    getAuth,
     signInWithPopup,
     GoogleAuthProvider,
     setPersistence,
@@ -21,8 +20,6 @@
 
   async function loginWithGoogle () {
     const provider = new GoogleAuthProvider();
-
-    const auth = getAuth()
     setPersistence(auth, browserLocalPersistence)
       .then(() => {
         console.log('Local persistence enabled.')

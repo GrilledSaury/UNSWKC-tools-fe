@@ -5,7 +5,7 @@
   import { UserCircle, AcademicCap, Adjustments } from "heroicons-for-svelte/icons/solid"
 
   import { goto } from '$app/navigation'
-  import { getAuth } from "firebase/auth"
+  import { getAuth, onAuthStateChanged } from "firebase/auth"
 
   const auth = getAuth()
   const user = auth.currentUser
@@ -13,13 +13,13 @@
   let profile = $state({ name: '' })
   let adminMode = $state(false)
 
-  async function loadUser () {
-    if (user === null) goto('/')
-    const docRef = doc(db, 'user', user.uid)
+  onAuthStateChanged(auth, async u => {
+    if (u === null) goto('/')
+    const docRef = doc(db, 'user', u.uid)
     const docSnap = await getDoc(docRef)
     if (docSnap.exists()) profile = docSnap.data()
     else goto('/')
-  }
+  })
 
   async function goProfile () {
     if (adminMode) goto('/profile/admin')
@@ -29,8 +29,6 @@
   async function goBeginner () {
     goto('/beginner')
   }
-
-  loadUser()
 
 </script>
 
