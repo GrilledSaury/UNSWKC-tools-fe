@@ -5,10 +5,11 @@
     getAuth,
     signInWithPopup,
     GoogleAuthProvider,
+    setPersistence,
+    browserLocalPersistence,
   } from "firebase/auth"
 
-  import { setDoc, doc, getDoc } from "firebase/firestore"
-  import { db } from '../lib/firebase'
+  import { setDoc, doc, getDoc, getFirestore } from "firebase/firestore"
 
   import { goto } from '$app/navigation'
 
@@ -21,34 +22,43 @@
   async function loginWithGoogle () {
     const provider = new GoogleAuthProvider();
 
-    const auth = getAuth();
-      signInWithPopup(auth, provider)
-        .then(async res => {
-          // This gives you a Google Access Token. You can use it to access the Google API.
-          const credential = GoogleAuthProvider.credentialFromResult(res);
-          const token = credential.accessToken;
-          // The signed-in user info.
-          const resUser = res.user;
-          // IdP data available using getAdditionalUserInfo(result)
-          // ...
-          const docRef = doc(db, 'user', resUser.uid)
-          const docSnap = await getDoc(docRef)
-          if (docSnap.exists()) return goto('/home')
-          else {
-            await setDoc(docRef, {
-              _id: resUser.uid,
-              name: resUser.displayName,
-              email: resUser.email,
-              admin: false
-            })
-            goto('/home')
-          }
-        }).catch((error) => {
-          // Handle Errors here.
-          const errorCode = error.code;
-          const errorMessage = error.message;
-          console.log(errorMessage)
-        });
+    const auth = getAuth()
+    setPersistence(auth, browserLocalPersistence)
+      .then(() => {
+        console.log('Local persistence enabled.')
+      })
+      .catch(err => {
+        console.log(err)
+      })
+    
+    signInWithPopup(auth, provider)
+      .then(async res => {
+        // This gives you a Google Access Token. You can use it to access the Google API.
+        const credential = GoogleAuthProvider.credentialFromResult(res);
+        const token = credential.accessToken;
+        // The signed-in user info.
+        const resUser = res.user;
+        // IdP data available using getAdditionalUserInfo(result)
+        // ...
+        const db = getFirestore()
+        const docRef = doc(db, 'user', resUser.uid)
+        const docSnap = await getDoc(docRef)
+        if (docSnap.exists()) return goto('/home')
+        else {
+          await setDoc(docRef, {
+            _id: resUser.uid,
+            name: resUser.displayName,
+            email: resUser.email,
+            admin: false
+          })
+          goto('/home')
+        }
+      }).catch((error) => {
+        // Handle Errors here.
+        const errorCode = error.code;
+        const errorMessage = error.message;
+        console.log(errorMessage)
+      });
   }
 
 </script>

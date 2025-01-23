@@ -1,14 +1,19 @@
 <script>
-  import { getDoc, doc, updateDoc } from "firebase/firestore"
-  import { db } from "../../lib/firebase"
-  import user from "../../lib/auth"
+  import { getDoc, doc, updateDoc, getFirestore } from "firebase/firestore"
+  import { page } from '$app/stores'
   import Swal from "sweetalert2"
+  import { goto } from '$app/navigation'
+  import { getAuth } from "firebase/auth";
+
+  const auth = getAuth()
+  const user = auth.currentUser
+  const db = getFirestore()
 
   let profile = $state({})
 
   async function loadProfile () {
-    if ($user === null) goto('/')
-    const docRef = doc(db, 'user', $user.uid)
+    if (user === null) goto('/')
+    const docRef = doc(db, 'user', $page.params._id)
     const docSnap = await getDoc(docRef)
     if (docSnap.exists()) profile = docSnap.data()
     else goto('/')
@@ -18,7 +23,7 @@
 
   async function update () {
     try {
-      const profileDoc = doc(db, 'user', $user.uid)
+      const profileDoc = doc(db, 'user', user.uid)
       await updateDoc(profileDoc, profile)
       Swal.fire('Successfully updated!', '', 'success')
     } catch (err) {
