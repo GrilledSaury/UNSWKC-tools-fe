@@ -3,17 +3,17 @@
   import { page } from '$app/stores'
   import Swal from "sweetalert2"
   import { goto } from '$app/navigation'
-  import { getAuth } from "firebase/auth";
+  import { getAuth } from "firebase/auth"
+  import { db } from '../../../lib/firebase'
 
   const auth = getAuth()
   const user = auth.currentUser
-  const db = getFirestore()
 
   let profile = $state({})
 
   async function loadProfile () {
     if (user === null) goto('/')
-    const docRef = doc(db, 'user', $page.params._id)
+    const docRef = doc(db, 'user', $page.url.searchParams.get('uid'))
     const docSnap = await getDoc(docRef)
     if (docSnap.exists()) profile = docSnap.data()
     else goto('/')

@@ -23,7 +23,7 @@
 
   async function goProfile () {
     if (adminMode) goto('/profile/admin')
-    else goto('/profile/user/' + user.uid)
+    else goto('/profile/user/?uid=' + user.uid)
   }
 
   async function goBeginner () {
