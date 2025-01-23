@@ -5,11 +5,9 @@
     getAuth,
     signInWithPopup,
     GoogleAuthProvider,
-    signInWithEmailAndPassword,
-    createUserWithEmailAndPassword,
   } from "firebase/auth"
 
-  import { collection, setDoc, getDocs, doc, getDoc } from "firebase/firestore"
+  import { setDoc, doc, getDoc } from "firebase/firestore"
   import { db } from '../lib/firebase'
 
   import { goto } from '$app/navigation'
@@ -30,17 +28,18 @@
           const credential = GoogleAuthProvider.credentialFromResult(res);
           const token = credential.accessToken;
           // The signed-in user info.
-          const user = res.user;
+          const resUser = res.user;
           // IdP data available using getAdditionalUserInfo(result)
           // ...
-          const docRef = doc(db, 'user', user.uid)
+          const docRef = doc(db, 'user', resUser.uid)
           const docSnap = await getDoc(docRef)
           if (docSnap.exists()) return goto('/home')
           else {
             await setDoc(docRef, {
-              _id: user.uid,
-              name: user.displayName,
-              email: user.email
+              _id: resUser.uid,
+              name: resUser.displayName,
+              email: resUser.email,
+              admin: false
             })
             goto('/home')
           }
