@@ -20,7 +20,7 @@
 
   async function update () {
     try {
-      const profileDoc = doc(db, 'user', user.uid)
+      const profileDoc = doc(db, 'user', $page.url.searchParams.get('uid'))
       await updateDoc(profileDoc, profile)
       Swal.fire('Successfully updated!', '', 'success')
     } catch (err) {
