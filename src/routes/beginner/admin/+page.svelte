@@ -1,19 +1,84 @@
 <script>
   import { onAuthStateChanged } from "firebase/auth"
-	import { auth } from '$lib/firebase'
+	import { auth, db, storage } from '$lib/firebase'
 	import { goto } from '$app/navigation'
+  import { collection, doc, getDoc, getDocs, updateDoc } from "firebase/firestore"
+	import { AIcon } from "ace.svelte"
+  import { mdiAccount, mdiImageSearch, mdiTagCheck } from "@mdi/js"
+	import Swal from "sweetalert2"
+	import { getDownloadURL, ref } from "firebase/storage"
 
 	let adminUser = $state({})
+	let beginnerList = $state([])
+	let users = $state({})
 
 	onAuthStateChanged(auth, async u => {
 		if (u === null) goto('/')
-		const docRef = doc(db, 'user', u.uid)
-    const docSnap = await getDoc(docRef)
-    if (docSnap.exists()) adminUser = docSnap.data()
+		const adminRef = doc(db, 'user', u.uid)
+    const adminSnap = await getDoc(adminRef)
+    if (adminSnap.exists()) adminUser = adminSnap.data()
+
+		const usersSnap = await getDocs(collection(db, 'user'))
+		usersSnap.forEach(doc => {
+			const u = doc.data()
+			users[u._id] = u
+		})
+
+		const beginnersSnap = await getDocs(collection(db, 'beginner'))
+		beginnersSnap.forEach(doc => {
+			beginnerList.push(doc.data())
+		})
 	})
+
+	async function goProfile (id) {
+		goto('/profile/?uid=' + id)
+	}
+
+	async function previewReceipt (path) {
+		if (!path) return
+		try {
+      const previewUrl = await getDownloadURL(ref(storage, path))
+      Swal.fire({
+        imageUrl: previewUrl
+      })
+    } catch (err) {
+      Swal.fire('Error', err.message, 'error')
+    }
+	}
+
+	async function activate (beginner) {
+		try {
+			await Swal.fire({
+				title: 'Are you sure?',
+				text: (beginner.activated ? 'Unactivating' : 'Activating') + ` beginner ${users[beginner.uid].name}`,
+				confirmButtonText: 'Yes',
+				showCancelButton: true,
+			}).then(async res => {
+				if (res.isConfirmed) {
+					const beginnerDoc = doc(db, 'beginner', beginner.uid)
+					await updateDoc(beginnerDoc, { activated: !beginner.activated })
+					beginner.activated = !beginner.activated
+				}
+			})
+		} catch (err) {
+			Swal.fire('Error', err.message, 'error')
+		}
+	}
 </script>
 
 <div class="w-screen min-h-screen bg-gray-100 px-16 py-8">
 	<div class="text-2xl font-bold my-4">Beginners' Data</div>
-
+	{#if adminUser.admin}
+		{#each beginnerList as beginner}
+			<div class="px-4 py-2 bg-white shadow rounded my-2 cursor-pointer flex items-center">
+				<div class="font-bold">{users[beginner.uid].name}</div>
+				<div class="grow"></div>
+				<button class="text-blue-500 mx-1" onclick={() => goProfile(beginner.uid)}><AIcon path={mdiAccount} /></button>
+				<button class={beginner.filePath ? 'text-blue-500 mx-1' : 'text-gray-500 mx-1'} onclick={() => previewReceipt(beginner.filePath)}><AIcon path={mdiImageSearch} /></button>
+				<button class={beginner.activated ? 'text-green-500' : 'text-gray-500'} onclick={() => activate(beginner)}><AIcon path={mdiTagCheck} /></button>
+			</div>
+		{/each}
+	{:else}
+		No authority!
+	{/if}
 </div>

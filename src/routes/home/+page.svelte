@@ -27,7 +27,8 @@
   }
 
   async function goBeginner () {
-    goto('/beginner')
+    if (adminMode) goto('/beginner/admin')
+    else goto('/beginner')
   }
 
 </script>

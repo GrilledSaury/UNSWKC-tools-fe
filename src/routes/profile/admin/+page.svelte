@@ -2,7 +2,9 @@
 	import { db, auth } from '$lib/firebase'
 	import { getDoc, doc, getDocs, collection } from 'firebase/firestore'
 	import { goto } from '$app/navigation'
-    import { onAuthStateChanged } from 'firebase/auth';
+  import { onAuthStateChanged } from 'firebase/auth'
+	import { AIcon } from 'ace.svelte'
+	import { mdiAccount } from '@mdi/js'
 
 	let adminUser = $state({})
 	let userList = $state([])
@@ -30,10 +32,14 @@
 	<div class="text-2xl font-bold my-4">Users' Profile</div>
 	{#if adminUser.admin}
 		{#each userList as u}
-			<div class="px-4 py-2 bg-white shadow rounded my-2 cursor-pointer" onclick={() => goProfile(u._id)}>
-				<div class="font-bold">{u.name}</div>
-				<div class="text-sm">{u.email}, {u.phone}</div>
-				<div class="text-sm text-gray-500">{u._id}</div>
+			<div class="px-4 py-2 bg-white shadow rounded my-2 cursor-pointer flex items-center">
+				<div>
+					<div class="font-bold">{u.name}</div>
+					<div class="text-sm">{u.email}, {u.phone}</div>
+					<div class="text-sm text-gray-500">{u._id}</div>
+				</div>
+				<div class="grow"></div>
+				<button class="text-blue-500" onclick={() => goProfile(u._id)}><AIcon path={mdiAccount} /></button>
 			</div>
 		{/each}
 	{:else}

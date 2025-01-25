@@ -47,7 +47,7 @@
   async function preview () {
     try {
       if (!previewUrl) previewUrl = await getDownloadURL(ref(storage, beginner.filePath))
-        Swal.fire({
+      Swal.fire({
         imageUrl: previewUrl
       })
     } catch (err) {
