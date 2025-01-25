@@ -47,4 +47,7 @@
     <a>no file found</a>
   </div>
   <button class="px-4 py-1 font-bold bg-blue-500 rounded shadow text-white my-4" onclick={submit}>Submit</button>
+  <button class={(beginner.activated ? 'bg-green-500 text-white' : 'bg-green-100 text-gray-300') + ' px-4 py-1 font-bold rounded shadow my-4 ml-4'}>
+    {beginner.activated ? 'Entry Pass' : 'Unactivated'}
+  </button>
 </div>
