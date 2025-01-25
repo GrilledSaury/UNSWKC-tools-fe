@@ -10,6 +10,7 @@
 
   let beginner = $state({ join: false })
   let files = $state()
+  let previewUrl = $state('')
   let uploading = $state(false)
 
   onAuthStateChanged(auth, async u => {
@@ -30,22 +31,28 @@
   async function upload () {
     if (!files[0]) return
     uploading = true
-    const url = `/${beginner.uid}/beginner/receipt-${files[0].name}`
-    const receiptRef = ref(storage, url)
+    const path = `/${beginner.uid}/beginner/receipt-${files[0].name}`
+    const receiptRef = ref(storage, path)
     try {
       await uploadBytes(receiptRef, files[0])
-      beginner.fileUrl = await getDownloadURL(ref(storage, url))
+      beginner.filePath = path
       await submit()
+      previewUrl = ''
     } catch (err) {
       Swal.fire('Error', err.message, 'error')
     }
     uploading = false
   }
 
-  function preview () {
-    Swal.fire({
-      imageUrl: beginner.fileUrl
-    })
+  async function preview () {
+    try {
+      if (!previewUrl) previewUrl = await getDownloadURL(ref(storage, beginner.filePath))
+        Swal.fire({
+        imageUrl: previewUrl
+      })
+    } catch (err) {
+      Swal.fire('Error', err.message, 'error')
+    }
   }
 
   async function submit () {
@@ -54,7 +61,7 @@
       await updateDoc(beginnerRef, beginner)
       Swal.fire('Submission Saved!', '', 'success')
     } catch (err) {
-      console.log(err)
+      Swal.fire('Error', err.message, 'error')
     }
   }
 </script>
@@ -73,7 +80,7 @@
       <input class="hidden" accept="image/png, image/jpeg" bind:files id="avatar" name="avatar" type="file" onchange={upload}/>
       {uploading ? 'Uploading' : 'Upload Receipt'}
     </label>
-    {#if beginner.fileUrl }
+    {#if beginner.filePath }
       <button class="text-blue-500 text-sm flex items-center" onclick={preview}>
         <AIcon class="mr-1" path={mdiImageSearch}/>
         Preview
