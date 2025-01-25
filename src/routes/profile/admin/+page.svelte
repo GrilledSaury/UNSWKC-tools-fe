@@ -2,13 +2,14 @@
 	import { db, auth } from '$lib/firebase'
 	import { getDoc, doc, getDocs, collection } from 'firebase/firestore'
 	import { goto } from '$app/navigation'
+    import { onAuthStateChanged } from 'firebase/auth';
 
 	let adminUser = $state({})
 	let userList = $state([])
 
-	async function init () {
-		if (!auth.currentUser) goto('/')
-		const docRef = doc(db, 'user', auth.currentUser.uid)
+	onAuthStateChanged(auth, async u => {
+		if (u === null) goto('/')
+		const docRef = doc(db, 'user', u.uid)
     const docSnap = await getDoc(docRef)
     if (docSnap.exists()) adminUser = docSnap.data()
     else goto('/')
@@ -17,9 +18,7 @@
 		usersSnap.forEach(doc => {
 			userList.push(doc.data())
 		})
-	}
-
-	init()
+	})
 
 	async function goProfile (id) {
 		goto('/profile/?uid=' + id)

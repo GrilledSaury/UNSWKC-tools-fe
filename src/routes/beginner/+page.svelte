@@ -5,26 +5,25 @@
   import { ACheckbox } from 'ace.svelte'
   import Swal from 'sweetalert2'
   import { goto } from '$app/navigation'
+    import { onAuthStateChanged } from 'firebase/auth';
 
   let beginner = $state({ join: false })
   let user = $state({})
 
-  async function init () {
-    if (!auth.currentUser) goto('/')
-    const beginnerRef = doc(db, 'beginner', auth.currentUser.uid)
+  onAuthStateChanged(auth, async u => {
+    if (u === null) goto('/')
+    const beginnerRef = doc(db, 'beginner', u.uid)
     const beginnerSnap = await getDoc(beginnerRef)
     if (beginnerSnap.exists()) beginner = beginnerSnap.data()
     else {
       await setDoc(beginnerRef, {
-        uid: auth.currentUser.uid,
+        uid: u.uid,
         join: false,
         activated: false,
       })
       beginner = (await getDoc(beginnerRef)).data()
     }
-  }
-
-  init()
+  })
 
   async function submit () {
     try {
