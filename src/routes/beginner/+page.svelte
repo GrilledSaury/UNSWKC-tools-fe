@@ -35,6 +35,7 @@
     try {
       await uploadBytes(receiptRef, files[0])
       beginner.fileUrl = await getDownloadURL(ref(storage, url))
+      await submit()
     } catch (err) {
       Swal.fire('Error', err.message, 'error')
     }
@@ -51,7 +52,7 @@
     try {
       const beginnerRef = doc(db, 'beginner', beginner.uid)
       await updateDoc(beginnerRef, beginner)
-      Swal.fire('success', '', 'success')
+      Swal.fire('Submission Saved!', '', 'success')
     } catch (err) {
       console.log(err)
     }
