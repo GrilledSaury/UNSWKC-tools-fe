@@ -70,7 +70,7 @@
 	<div class="text-2xl font-bold my-4">Beginners' Data</div>
 	{#if adminUser.admin}
 		{#each beginnerList as beginner}
-			<div class="px-4 py-2 bg-white shadow rounded my-2 cursor-pointer flex items-center">
+			<div class="px-4 py-2 bg-white shadow rounded my-2 flex items-center">
 				<div class="font-bold">{users[beginner.uid].name}</div>
 				<div class="grow"></div>
 				<button class="text-blue-500 mx-1" onclick={() => goProfile(beginner.uid)}><AIcon path={mdiAccount} /></button>

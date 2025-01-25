@@ -32,7 +32,7 @@
 	<div class="text-2xl font-bold my-4">Users' Profile</div>
 	{#if adminUser.admin}
 		{#each userList as u}
-			<div class="px-4 py-2 bg-white shadow rounded my-2 cursor-pointer flex items-center">
+			<div class="px-4 py-2 bg-white shadow rounded my-2 flex items-center">
 				<div>
 					<div class="font-bold">{u.name}</div>
 					<div class="text-sm">{u.email}, {u.phone}</div>
