@@ -34,7 +34,7 @@
 
 <div class="h-screen w-screen bg-gray-100 flex flex-col p-3 sm:p-10">
   <h1 class="text-gray-700 font-bold text-3xl m-3">Welcome, {profile.name}</h1>
-  <div class="flex flex-col sm:flex-row items-center">
+  <div class="flex flex-wrap items-center">
     <button
       class={(adminMode ? 'border-blue-500 ' : 'border-gray-100 ') + 'border border-2 m-2 px-3 py-2 rounded shadow bg-white transition-all flex items-center sm:justify-center'}
       onclick={goProfile}
@@ -50,8 +50,10 @@
       Beginner Course
     </button>
     {#if profile.admin}
-      <ASwitch bind:value={adminMode} />
-      <label class="ml-2">Admin Mode</label>
+      <label class="flex items-center m-2">
+        <ASwitch bind:value={adminMode} />
+        <div class="ml-2">Admin Mode</div>
+      </label>
     {/if}
   </div>
 </div>
