@@ -1,34 +1,48 @@
 <script>
   import { auth } from '$lib/firebase'
-  import { doc, getDoc, setDoc } from "firebase/firestore"
+  import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore"
   import { db } from "../../lib/firebase"
   import { onAuthStateChanged } from 'firebase/auth'
+  import { ACheckbox } from 'ace.svelte'
+  import Swal from 'sweetalert2'
+  import { goto } from '$app/navigation'
 
-  let beginner = $state({})
+  let beginner = $state({ join: false })
   let user = $state({})
 
-  onAuthStateChanged(auth, async u => {
-    if (u === null) goto('/')
-		const userRef = doc(db, 'user', u.uid)
-    const userSnap = await getDoc(userRef)
-    if (userSnap.exists()) user = userSnap.data()
-    else goto('/')
-
-    const beginnerRef = doc(db, 'beginner', u.uid)
+  async function init () {
+    if (!auth.currentUser) goto('/')
+    const beginnerRef = doc(db, 'beginner', auth.currentUser.uid)
     const beginnerSnap = await getDoc(beginnerRef)
     if (beginnerSnap.exists()) beginner = beginnerSnap.data()
     else {
       await setDoc(beginnerRef, {
-        uid: u.uid,
+        uid: auth.currentUser.uid,
         join: false,
         activated: false,
       })
       beginner = (await getDoc(beginnerRef)).data()
     }
-  })
+  }
+
+  init()
+
+  async function submit () {
+    try {
+      const beginnerRef = doc(db, 'beginner', beginner.uid)
+      await updateDoc(beginnerRef, beginner)
+      Swal.fire('success', '', 'success')
+    } catch (err) {
+      console.log(err)
+    }
+  }
 </script>
 
 <div class="w-screen min-h-screen bg-gray-100 px-16 py-8">
   <div class="text-2xl font-bold my-4">Beginner Course</div>
-  {beginner.uid}, {beginner.join}
+  <div class="flex items-center">
+    <ACheckbox bind:value={beginner.join} />
+    <div class="ml-2">Yes, I will come to Beginner Course 25T1.</div>
+  </div>
+  <button class="px-4 py-1 font-bold bg-blue-500 rounded shadow text-white my-4" onclick={submit}>Submit</button>
 </div>
