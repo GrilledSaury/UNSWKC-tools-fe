@@ -21,7 +21,7 @@
 	})
 
 	async function goProfile (id) {
-		goto('/profile/user/?uid=' + id)
+		goto('/profile/?uid=' + id)
 	}
 
 </script>
