@@ -61,21 +61,9 @@
 </script>
 
 <div class="h-screen w-screen bg-gray-100 flex flex-col items-center justify-center">
-  <div class="text-2xl font-bold my-4 w-4/5 md:w-1/2">UNSWKC-tools</div>
-  <!-- {#if signInMode}
-    <div class="text-gray-500 my-2 w-4/5 md:w-1/2 whitespace-nowrap">{hint}</div>
-  {/if}
-  <div class="w-4/5 md:w-1/2">
-    <input class="my-2 p-1 w-full" placeholder="Email (use Gmail to join our mailing list)" bind:value={email}>
-    {#if signInMode}
-      <input class="my-2 p-1 w-full" placeholder="password" type="password" bind:value={password}>
-      {#if signInMode === 1}
-        <input class="my-2 p-1 w-full" placeholder="confirm password" type="password" bind:value={confirmPasswrod}>
-      {/if}
-    {/if}
-  </div> -->
+  <div class="text-2xl font-bold my-8 w-4/5 md:w-1/2">UNSWKC-tools</div>
   <div class="flex flex-col w-4/5 md:w-1/2 justify-center">
-    <button class="rounded my-2 px-4 py-1 bg-white text-blue-500 shadow flex items-center justify-center whitespace-nowrap" onclick={loginWithGoogle}>Continue with Google account</button>
-    <button class="rounded my-2 px-4 py-1 bg-white text-gray-500 shadow whitespace-nowrap">Continue without signing in</button>
+    <button class="rounded my-2 p-4 bg-blue-500 text-white shadow transition-all hover:shadow-md flex items-center justify-center whitespace-nowrap" onclick={loginWithGoogle}>Sign in with Google</button>
+    <button class="rounded my-2 p-4 bg-white text-gray-500 shadow transition-all hover:shadow-md whitespace-nowrap">Continue without Signing in</button>
   </div>
 </div>
