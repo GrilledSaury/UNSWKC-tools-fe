@@ -4,19 +4,21 @@
   import Swal from "sweetalert2"
   import { goto } from '$app/navigation'
   import { db, auth } from '$lib/firebase'
-  import { onAuthStateChanged } from "firebase/auth";
 
   const user = auth.currentUser
 
   let profile = $state({})
 
-  onAuthStateChanged(auth, async u => {
-    if (u == null) goto('/')
+  async function init () {
+    if (!auth.currentUser) goto('/')
     const docRef = doc(db, 'user', $page.url.searchParams.get('uid'))
     const docSnap = await getDoc(docRef)
     if (docSnap.exists()) profile = docSnap.data()
-    else goto('/')
-  })
+    else {
+      Swal.fire('Profile not found', '', 'error')
+      goto('/home')
+    }
+  }
 
   async function update () {
     try {
