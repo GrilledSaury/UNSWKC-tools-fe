@@ -2,7 +2,6 @@
   import { auth } from '$lib/firebase'
   import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore"
   import { db } from "../../lib/firebase"
-  import { onAuthStateChanged } from 'firebase/auth'
   import { ACheckbox } from 'ace.svelte'
   import Swal from 'sweetalert2'
   import { goto } from '$app/navigation'
@@ -43,6 +42,10 @@
   <div class="flex items-center">
     <ACheckbox bind:value={beginner.join} />
     <div class="ml-2">Yes, I will come to Beginner Course 25T1.</div>
+  </div>
+  <div>
+    <button class="px-4 py-1 font-bold bg-white rounded shadow text-blue-500 my-4 mr-2">Upload Receipt</button>
+    <a>no file found</a>
   </div>
   <button class="px-4 py-1 font-bold bg-blue-500 rounded shadow text-white my-4" onclick={submit}>Submit</button>
 </div>
