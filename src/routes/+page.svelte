@@ -18,7 +18,11 @@
   // let confirmPasswrod = $state('')
   // let signInMode = $state(0) // 0 for start, 1 for signing up, 2 for signing in
 
+  let loading = $state(false)
+
   async function loginWithGoogle () {
+    if (loading) return
+    loading = true
     const provider = new GoogleAuthProvider();
     setPersistence(auth, browserLocalPersistence)
       .then(() => {
@@ -48,6 +52,7 @@
             email: resUser.email,
             admin: false
           })
+          loading = false
           goto('/home')
         }
       }).catch((error) => {
@@ -55,6 +60,7 @@
         const errorCode = error.code;
         const errorMessage = error.message;
         console.log(errorMessage)
+        loading = false
       });
   }
 

@@ -4,7 +4,7 @@
 	import { goto } from '$app/navigation'
   import { collection, doc, getDoc, getDocs, updateDoc } from "firebase/firestore"
 	import { AIcon } from "ace.svelte"
-  import { mdiAccount, mdiImageSearch, mdiQrcode, mdiTagCheck } from "@mdi/js"
+  import { mdiAccount, mdiImageSearch, mdiQrcode, mdiTagCheck, mdiCheck } from "@mdi/js"
 	import Swal from "sweetalert2"
 	import { getDownloadURL, ref } from "firebase/storage"
 
@@ -26,7 +26,7 @@
 
 		const beginnersSnap = await getDocs(collection(db, 'beginner'))
 		beginnersSnap.forEach(doc => {
-			beginnerList.push(doc.data())
+			if (doc.data().join) beginnerList.push(doc.data())
 		})
 	})
 
@@ -77,6 +77,13 @@
 			<div class="px-4 py-2 bg-white shadow rounded my-2 flex items-center">
 				<div class="font-bold">{users[beginner.uid].name}</div>
 				<div class="grow"></div>
+				{#if beginner.progress}
+					<div class="flex items-center">
+						{#each beginner.progress as p}
+							<AIcon class={p ? 'text-green-500 mx-1' : 'text-gray-500 mx-1'} path={mdiCheck}></AIcon>
+						{/each}
+					</div>
+				{/if}
 				<button class="text-blue-500 mx-1" onclick={() => goProfile(beginner.uid)}><AIcon path={mdiAccount} /></button>
 				<button class={beginner.filePath ? 'text-blue-500 mx-1' : 'text-gray-500 mx-1'} onclick={() => previewReceipt(beginner.filePath)}><AIcon path={mdiImageSearch} /></button>
 				<button class={beginner.activated ? 'text-green-500' : 'text-gray-500'} onclick={() => activate(beginner)}><AIcon path={mdiTagCheck} /></button>

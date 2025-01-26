@@ -5,7 +5,7 @@
   import Swal from 'sweetalert2'
   import { goto } from '$app/navigation'
   import { onAuthStateChanged } from 'firebase/auth'
-  import { mdiImageSearch } from '@mdi/js'
+  import { mdiCheck, mdiImageSearch } from '@mdi/js'
   import { getDownloadURL, ref, uploadBytes } from 'firebase/storage'
   import QRCode from 'qrcode'
 
@@ -24,13 +24,14 @@
         uid: u.uid,
         join: false,
         activated: false,
+        progress: [false, false, false, false]
       })
       beginner = (await getDoc(beginnerRef)).data()
     }
   })
 
   async function upload () {
-    if (!files[0]) return
+    if (!files[0] || uploading) return
     uploading = true
     const path = `/${beginner.uid}/beginner/receipt-${files[0].name}`
     const receiptRef = ref(storage, path)
@@ -67,6 +68,7 @@
   }
 
 async function showQRCode () {
+  if (!beginner.activated) return
   try {
     Swal.fire({
       imageUrl: await QRCode.toDataURL(beginner.uid),
@@ -107,4 +109,12 @@ async function showQRCode () {
   >
     {beginner.activated ? 'Entry Pass' : 'Unactivated'}
   </button>
+  {#if beginner.progress}
+    <div class="flex items-center">
+      <div class="text-xl mr-2">Progress</div>
+      {#each beginner.progress as p}
+        <AIcon class={p ? 'text-green-500 mx-1' : 'text-gray-500 mx-1'} path={mdiCheck}></AIcon>
+      {/each}
+    </div>
+  {/if}
 </div>
