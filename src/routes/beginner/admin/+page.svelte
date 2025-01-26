@@ -4,7 +4,7 @@
 	import { goto } from '$app/navigation'
   import { collection, doc, getDoc, getDocs, updateDoc } from "firebase/firestore"
 	import { AIcon } from "ace.svelte"
-  import { mdiAccount, mdiImageSearch, mdiTagCheck } from "@mdi/js"
+  import { mdiAccount, mdiImageSearch, mdiQrcode, mdiTagCheck } from "@mdi/js"
 	import Swal from "sweetalert2"
 	import { getDownloadURL, ref } from "firebase/storage"
 
@@ -69,6 +69,10 @@
 <div class="w-screen min-h-screen bg-gray-100 px-16 py-8">
 	<div class="text-2xl font-bold my-4">Beginners' Data</div>
 	{#if adminUser.admin}
+		<button class="text-white bg-green-500 px-2 py-1 font-bold rounded shadow my-4 flex items-center" onclick={() => goto('/beginner/admin/scan')}>
+			<AIcon path={mdiQrcode} class="mr-2"></AIcon>
+			Scan
+		</button>
 		{#each beginnerList as beginner}
 			<div class="px-4 py-2 bg-white shadow rounded my-2 flex items-center">
 				<div class="font-bold">{users[beginner.uid].name}</div>

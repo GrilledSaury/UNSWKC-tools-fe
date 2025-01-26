@@ -7,6 +7,7 @@
   import { onAuthStateChanged } from 'firebase/auth'
   import { mdiImageSearch } from '@mdi/js'
   import { getDownloadURL, ref, uploadBytes } from 'firebase/storage'
+  import QRCode from 'qrcode'
 
   let beginner = $state({ join: false })
   let files = $state()
@@ -64,6 +65,18 @@
       Swal.fire('Error', err.message, 'error')
     }
   }
+
+async function showQRCode () {
+  try {
+    Swal.fire({
+      imageUrl: await QRCode.toDataURL(beginner.uid),
+      imageHeight: 360
+    })
+  } catch (err) {
+    console.error(err)
+  }
+}
+
 </script>
 
 <div class="w-screen min-h-screen bg-gray-100 px-16 py-8">
@@ -88,7 +101,10 @@
     {/if}
   </div>
   <button class="px-4 py-1 font-bold bg-blue-500 rounded shadow text-white my-4" onclick={submit}>Submit</button>
-  <button class={(beginner.activated ? 'bg-green-500 text-white' : 'bg-green-100 text-gray-300') + ' px-4 py-1 font-bold rounded shadow my-4 ml-4'}>
+  <button
+    class={(beginner.activated ? 'bg-green-500 text-white' : 'bg-green-100 text-gray-300') + ' px-4 py-1 font-bold rounded shadow my-4 ml-4'}
+    onclick={showQRCode}
+  >
     {beginner.activated ? 'Entry Pass' : 'Unactivated'}
   </button>
 </div>
