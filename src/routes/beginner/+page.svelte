@@ -13,6 +13,7 @@
   let files = $state()
   let previewUrl = $state('')
   let uploading = $state(false)
+  const getUid = () => auth.currentUser.uid
 
   onAuthStateChanged(auth, async u => {
     if (u === null) goto('/')
@@ -21,7 +22,6 @@
     if (beginnerSnap.exists()) beginner = beginnerSnap.data()
     else {
       await setDoc(beginnerRef, {
-        uid: u.uid,
         join: false,
         activated: false,
         progress: [false, false, false, false]
@@ -33,7 +33,7 @@
   async function upload () {
     if (!files[0] || uploading) return
     uploading = true
-    const path = `/${beginner.uid}/beginner/receipt-${files[0].name}`
+    const path = `/${getUid()}/beginner/receipt-${files[0].name}`
     const receiptRef = ref(storage, path)
     try {
       await uploadBytes(receiptRef, files[0])
@@ -59,7 +59,7 @@
 
   async function submit () {
     try {
-      const beginnerRef = doc(db, 'beginner', beginner.uid)
+      const beginnerRef = doc(db, 'beginner', getUid())
       await updateDoc(beginnerRef, beginner)
       Swal.fire('Submission Saved!', '', 'success')
     } catch (err) {
@@ -71,7 +71,7 @@ async function showQRCode () {
   if (!beginner.activated) return
   try {
     Swal.fire({
-      imageUrl: await QRCode.toDataURL(beginner.uid),
+      imageUrl: await QRCode.toDataURL(getUid()),
       imageHeight: 360
     })
   } catch (err) {

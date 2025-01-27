@@ -21,12 +21,12 @@
 		const usersSnap = await getDocs(collection(db, 'user'))
 		usersSnap.forEach(doc => {
 			const u = doc.data()
-			users[u._id] = u
+			users[doc.id] = u
 		})
 
 		const beginnersSnap = await getDocs(collection(db, 'beginner'))
 		beginnersSnap.forEach(doc => {
-			if (doc.data().join) beginnerList.push(doc.data())
+			if (doc.data().join) beginnerList.push({ uid: doc.id, data: doc.data() })
 		})
 	})
 
@@ -50,14 +50,14 @@
 		try {
 			await Swal.fire({
 				title: 'Are you sure?',
-				text: (beginner.activated ? 'Unactivating' : 'Activating') + ` beginner ${users[beginner.uid].name}`,
+				text: (beginner.data.activated ? 'Unactivating' : 'Activating') + ` beginner ${users[beginner.uid].name}`,
 				confirmButtonText: 'Yes',
 				showCancelButton: true,
 			}).then(async res => {
 				if (res.isConfirmed) {
 					const beginnerDoc = doc(db, 'beginner', beginner.uid)
-					await updateDoc(beginnerDoc, { activated: !beginner.activated })
-					beginner.activated = !beginner.activated
+					await updateDoc(beginnerDoc, { activated: !beginner.data.activated })
+					beginner.data.activated = !beginner.data.activated
 				}
 			})
 		} catch (err) {
@@ -77,16 +77,16 @@
 			<div class="px-4 py-2 bg-white shadow rounded my-2 flex items-center">
 				<div class="font-bold">{users[beginner.uid].name}</div>
 				<div class="grow"></div>
-				{#if beginner.progress}
+				{#if beginner.data.progress}
 					<div class="flex items-center">
-						{#each beginner.progress as p}
+						{#each beginner.data.progress as p}
 							<AIcon class={p ? 'text-green-500 mx-1' : 'text-gray-500 mx-1'} path={mdiCheck}></AIcon>
 						{/each}
 					</div>
 				{/if}
 				<button class="text-blue-500 mx-1" onclick={() => goProfile(beginner.uid)}><AIcon path={mdiAccount} /></button>
-				<button class={beginner.filePath ? 'text-blue-500 mx-1' : 'text-gray-500 mx-1'} onclick={() => previewReceipt(beginner.filePath)}><AIcon path={mdiImageSearch} /></button>
-				<button class={beginner.activated ? 'text-green-500' : 'text-gray-500'} onclick={() => activate(beginner)}><AIcon path={mdiTagCheck} /></button>
+				<button class={beginner.data.filePath ? 'text-blue-500 mx-1' : 'text-gray-500 mx-1'} onclick={() => previewReceipt(beginner.data.filePath)}><AIcon path={mdiImageSearch} /></button>
+				<button class={beginner.data.activated ? 'text-green-500' : 'text-gray-500'} onclick={() => activate(beginner)}><AIcon path={mdiTagCheck} /></button>
 			</div>
 		{/each}
 	{:else}

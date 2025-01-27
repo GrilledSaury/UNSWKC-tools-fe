@@ -18,7 +18,7 @@
 
 		const usersSnap = await getDocs(collection(db, 'user'))
 		usersSnap.forEach(doc => {
-			userList.push(doc.data())
+			userList.push({ uid: doc.id, data: doc.data() })
 		})
 	})
 
@@ -34,12 +34,12 @@
 		{#each userList as u}
 			<div class="px-4 py-2 bg-white shadow rounded my-2 flex items-center">
 				<div>
-					<div class="font-bold">{u.name}</div>
-					<div class="text-sm">{u.email}, {u.phone}</div>
-					<div class="text-sm text-gray-500">{u._id}</div>
+					<div class="font-bold">{u.data.name}</div>
+					<div class="text-sm">{u.data.email}, {u.data.phone}</div>
+					<div class="text-sm text-gray-500">{u.uid}</div>
 				</div>
 				<div class="grow"></div>
-				<button class="text-blue-500" onclick={() => goProfile(u._id)}><AIcon path={mdiAccount} /></button>
+				<button class="text-blue-500" onclick={() => goProfile(u.uid)}><AIcon path={mdiAccount} /></button>
 			</div>
 		{/each}
 	{:else}

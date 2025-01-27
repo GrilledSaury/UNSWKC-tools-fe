@@ -47,7 +47,6 @@
         if (docSnap.exists()) return goto('/home')
         else {
           await setDoc(docRef, {
-            _id: resUser.uid,
             name: resUser.displayName,
             email: resUser.email,
             admin: false

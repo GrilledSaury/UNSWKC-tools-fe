@@ -9,9 +9,12 @@
   const user = auth.currentUser
 
   let profile = $state({})
+  let profileId = $state($page.url.searchParams.get('uid'))
+  let uid = $state('')
 
   onAuthStateChanged(auth, async u => {
     if (u === null) goto('/')
+    uid = u.uid
     const docRef = doc(db, 'user', $page.url.searchParams.get('uid'))
     const docSnap = await getDoc(docRef)
     if (docSnap.exists()) profile = docSnap.data()
@@ -23,7 +26,7 @@
 
   async function update () {
     try {
-      const profileDoc = doc(db, 'user', $page.url.searchParams.get('uid'))
+      const profileDoc = doc(db, 'user', profileId)
       await updateDoc(profileDoc, profile)
       Swal.fire('Successfully updated!', '', 'success')
     } catch (err) {
@@ -35,7 +38,7 @@
 
 <div class="w-screen h-screen bg-gray-100 px-16 py-8">
   <div class="text-2xl font-bold my-2">Profile</div>
-  <div class="text-gray-500 font-mono my-2">ID: {profile._id}</div>
+  <div class="text-gray-500 font-mono my-2">ID: {profileId}</div>
   <div class="flex my-2 items-center">
     <div class="w-16 mr-2">Name</div>
     <input class="w-4/5 px-2 py-1 rounded" bind:value={profile.name}>
