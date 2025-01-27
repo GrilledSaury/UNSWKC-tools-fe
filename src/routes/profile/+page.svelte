@@ -45,7 +45,7 @@
   </div>
   <div class="flex my-2 items-center">
     <div class="w-16 mr-2">Email</div>
-    <input class="w-4/5 px-2 py-1 rounded" bind:value={profile.email}>
+    <input class="w-4/5 px-2 py-1 rounded" bind:value={profile.email} disabled>
   </div>
   <div class="flex my-2 items-center">
     <div class="w-16 mr-2">Email2</div>
