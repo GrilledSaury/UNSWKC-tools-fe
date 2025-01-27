@@ -1,7 +1,7 @@
 <script>
   import { db } from '$lib/firebase'
   import { getDoc, doc } from "firebase/firestore"
-  import { mdiAccount, mdiSchool } from '@mdi/js'
+  import { mdiAccount, mdiLogout, mdiSchool } from '@mdi/js'
   import { AIcon, ASwitch } from 'ace.svelte'
 
   import { goto } from '$app/navigation'
@@ -34,7 +34,11 @@
 </script>
 
 <div class="h-screen w-screen bg-gray-100 flex flex-col p-3 sm:p-10">
-  <h1 class="text-gray-700 font-bold text-3xl m-3">Welcome, {profile.name}</h1>
+  <div class="flex items-center">
+    <h1 class="text-gray-700 font-bold text-3xl m-3">Welcome, {profile.name}</h1>
+    <div class="grow"></div>
+    <button onclick={() => goto('/')}><AIcon class="text-red-500" path={mdiLogout}></AIcon></button>
+  </div>
   <div class="flex flex-wrap items-center">
     <button
       class={(adminMode ? 'border-blue-500 ' : 'border-gray-100 ') + 'border border-2 m-2 px-3 py-2 rounded shadow bg-white transition-all flex items-center sm:justify-center'}
