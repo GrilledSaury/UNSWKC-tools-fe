@@ -23,44 +23,44 @@
   async function loginWithGoogle () {
     if (loading) return
     loading = true
-    const provider = new GoogleAuthProvider();
-    setPersistence(auth, browserLocalPersistence)
-      .then(() => {
-        console.log('Local persistence enabled.')
-      })
-      .catch(err => {
-        console.log(err)
-      })
-    
-    signInWithPopup(auth, provider)
-      .then(async res => {
-        // This gives you a Google Access Token. You can use it to access the Google API.
-        const credential = GoogleAuthProvider.credentialFromResult(res);
-        const token = credential.accessToken;
-        // The signed-in user info.
-        const resUser = res.user;
-        // IdP data available using getAdditionalUserInfo(result)
-        // ...
-        const db = getFirestore()
-        const docRef = doc(db, 'user', resUser.uid)
-        const docSnap = await getDoc(docRef)
-        if (docSnap.exists()) return goto('/home')
-        else {
-          await setDoc(docRef, {
-            name: resUser.displayName,
-            email: resUser.email,
-            admin: false
-          })
-          loading = false
-          goto('/home')
-        }
-      }).catch((error) => {
-        // Handle Errors here.
-        const errorCode = error.code;
-        const errorMessage = error.message;
-        console.log(errorMessage)
+    const provider = new GoogleAuthProvider()
+
+    try {
+      await setPersistence(auth, browserLocalPersistence)
+      console.log('Local persistence enabled.')
+    } catch (err) {
+      console.log(err)
+    }
+
+    try {
+      const res = await signInWithPopup(auth, provider)
+      // This gives you a Google Access Token. You can use it to access the Google API.
+      const credential = GoogleAuthProvider.credentialFromResult(res)
+      const token = credential.accessToken
+      // The signed-in user info.
+      const resUser = res.user
+      // IdP data available using getAdditionalUserInfo(result)
+      // ...
+      const db = getFirestore()
+      const docRef = doc(db, 'user', resUser.uid)
+      const docSnap = await getDoc(docRef)
+      if (docSnap.exists()) return goto('/home')
+      else {
+        await setDoc(docRef, {
+          name: resUser.displayName,
+          email: resUser.email,
+          admin: false
+        })
         loading = false
-      });
+        goto('/home')
+      }
+    } catch (err) {
+      // Handle Errors here.
+      const errorCode = err.code
+      const errorMessage = err.message
+      console.log(errorMessage)
+      loading = false
+    }
   }
 
 </script>

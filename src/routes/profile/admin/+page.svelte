@@ -28,13 +28,13 @@
 
 </script>
 
-<div class="w-screen min-h-screen bg-gray-100 px-16 py-8">
+<div class="w-screen min-h-screen bg-gray-100 p-4 md:px-16 md:py-8">
 	<div class="text-2xl font-bold my-4">Users' Profile</div>
 	{#if adminUser.admin}
 		{#each userList as u}
 			<div class="px-4 py-2 bg-white shadow rounded my-2 flex items-center">
 				<div>
-					<div class="font-bold">{u.data.name}</div>
+					<div class="font-bold whitespace-nowrap">{u.data.name}</div>
 					<div class="text-sm">{u.data.email}, {u.data.phone}</div>
 					<div class="text-sm text-gray-500">{u.uid}</div>
 				</div>

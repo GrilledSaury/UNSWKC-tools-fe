@@ -81,7 +81,7 @@ async function showQRCode () {
 
 </script>
 
-<div class="w-screen min-h-screen bg-gray-100 px-16 py-8">
+<div class="w-screen min-h-screen bg-gray-100 p-4 md:px-16 md:py-8">
   <div class="text-2xl font-bold my-4">Beginner Course</div>
   <div class="h-1/2 w-4/5 my-2">
     beginner course details

@@ -48,25 +48,25 @@
 
 	async function activate (beginner) {
 		try {
-			await Swal.fire({
+			const { isConfirmed } = await Swal.fire({
 				title: 'Are you sure?',
 				text: (beginner.data.activated ? 'Unactivating' : 'Activating') + ` beginner ${users[beginner.uid].name}`,
 				confirmButtonText: 'Yes',
 				showCancelButton: true,
-			}).then(async res => {
-				if (res.isConfirmed) {
-					const beginnerDoc = doc(db, 'beginner', beginner.uid)
-					await updateDoc(beginnerDoc, { activated: !beginner.data.activated })
-					beginner.data.activated = !beginner.data.activated
-				}
 			})
+
+			if (isConfirmed) {
+				const beginnerDoc = doc(db, 'beginner', beginner.uid)
+				await updateDoc(beginnerDoc, { activated: !beginner.data.activated })
+				beginner.data.activated = !beginner.data.activated
+			}
 		} catch (err) {
 			Swal.fire('Error', err.message, 'error')
 		}
 	}
 </script>
 
-<div class="w-screen min-h-screen bg-gray-100 px-16 py-8">
+<div class="w-screen min-h-screen bg-gray-100 p-4 md:px-16 md:py-8">
 	<div class="text-2xl font-bold my-4">Beginners' Data</div>
 	{#if adminUser.admin}
 		<button class="text-white bg-green-500 px-2 py-1 font-bold rounded shadow my-4 flex items-center" onclick={() => goto('/beginner/admin/scan')}>
@@ -75,8 +75,7 @@
 		</button>
 		{#each beginnerList as beginner}
 			<div class="px-4 py-2 bg-white shadow rounded my-2 flex items-center">
-				<div class="font-bold">{users[beginner.uid].name}</div>
-				<div class="grow"></div>
+				<div class="font-bold whitespace-nowrap grow overflow-x-scroll">{users[beginner.uid].name}</div>
 				{#if beginner.data.progress}
 					<div class="flex items-center">
 						{#each beginner.data.progress as p}
@@ -84,9 +83,11 @@
 						{/each}
 					</div>
 				{/if}
-				<button class="text-blue-500 mx-1" onclick={() => goProfile(beginner.uid)}><AIcon path={mdiAccount} /></button>
-				<button class={beginner.data.filePath ? 'text-blue-500 mx-1' : 'text-gray-500 mx-1'} onclick={() => previewReceipt(beginner.data.filePath)}><AIcon path={mdiImageSearch} /></button>
-				<button class={beginner.data.activated ? 'text-green-500' : 'text-gray-500'} onclick={() => activate(beginner)}><AIcon path={mdiTagCheck} /></button>
+				<div class="flex items-center">
+					<button class="text-blue-500 mx-1" onclick={() => goProfile(beginner.uid)}><AIcon path={mdiAccount} /></button>
+					<button class={beginner.data.filePath ? 'text-blue-500 mx-1' : 'text-gray-500 mx-1'} onclick={() => previewReceipt(beginner.data.filePath)}><AIcon path={mdiImageSearch} /></button>
+					<button class={beginner.data.activated ? 'text-green-500 mx-1' : 'text-gray-500 mx-1'} onclick={() => activate(beginner)}><AIcon path={mdiTagCheck} /></button>
+				</div>
 			</div>
 		{/each}
 	{:else}
