@@ -81,7 +81,7 @@ async function showQRCode () {
 
 </script>
 
-<div class="w-screen h-screen bg-gray-100 p-4 md:px-16 md:py-8">
+<div class="w-screen min-h-screen bg-gray-100 p-4 md:px-16 md:py-8">
   <button onclick={() => goto('/home')}>
     <AIcon path={mdiHome} size="36" class="text-gray-500"></AIcon>
   </button>
@@ -90,7 +90,7 @@ async function showQRCode () {
     <AIcon path={mdiAccount} class="mr-2"></AIcon>
     Update my details
   </button>
-  <div class="h-1/2 my-2 overflow-scroll bg-white p-4 rounded">
+  <div class="h-96 my-2 overflow-scroll bg-white p-4 rounded">
     Thank you for your interest in our club! Our upcoming Beginners Course is expected to commence on Wednesday 19th Feburary (Term 1 week 1). Classes will be held on Wednesday weekly from 7:30 pm to 9:00 pm.
     <br>This course is mandatory for any beginners intending to take up Kendo.
     <br>During the course, you will learn the fundamental footwork, swinging/cutting techniques and etiquette in Kendo.
