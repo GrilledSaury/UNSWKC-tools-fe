@@ -5,6 +5,8 @@
   import { goto } from '$app/navigation'
   import { db, auth } from '$lib/firebase'
   import { onAuthStateChanged } from "firebase/auth"
+  import { AIcon } from "ace.svelte"
+  import { mdiHome } from "@mdi/js"
 
   const user = auth.currentUser
 
@@ -37,6 +39,9 @@
 </script>
 
 <div class="w-screen h-screen bg-gray-100 p-4 md:px-16 md:py-8">
+  <button onclick={() => goto('/home')}>
+    <AIcon path={mdiHome} size="36" class="text-gray-500"></AIcon>
+  </button>
   <div class="text-2xl font-bold my-2">Profile</div>
   <div class="text-gray-500 font-mono my-2">ID: {profileId}</div>
   <div class="flex my-2 items-center">

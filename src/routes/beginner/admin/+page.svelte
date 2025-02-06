@@ -4,7 +4,7 @@
 	import { goto } from '$app/navigation'
   import { collection, doc, getDoc, getDocs, updateDoc } from "firebase/firestore"
 	import { AIcon } from "ace.svelte"
-  import { mdiAccount, mdiImageSearch, mdiQrcode, mdiTagCheck, mdiCheck } from "@mdi/js"
+  import { mdiAccount, mdiImageSearch, mdiQrcode, mdiTagCheck, mdiCheck, mdiDownloadBox, mdiHome } from "@mdi/js"
 	import Swal from "sweetalert2"
 	import { getDownloadURL, ref } from "firebase/storage"
 
@@ -64,15 +64,44 @@
 			Swal.fire('Error', err.message, 'error')
 		}
 	}
+
+	function downloadData () {
+		const csvContent = `"Name","Email","Phone","Session 1","Session 2","Session 3","Session 4"\r\n` + beginnerList.map(b => {
+			const row = []
+			row.push(users[b.uid].name)
+			row.push(users[b.uid].email)
+			row.push(users[b.uid].phone)
+			for (const p of b.data.progress) row.push(p ? 'attended' : '-')
+			return row.map(v => `"${v}"`).join(',')
+		}).join('\r\n')
+
+		const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+		const url = URL.createObjectURL(blob);
+
+		// Create a link to download it
+		const pom = document.createElement('a')
+		pom.href = url
+		pom.setAttribute('download', 'Beginner Course Data.csv')
+		pom.click()
+	}
 </script>
 
 <div class="w-screen min-h-screen bg-gray-100 p-4 md:px-16 md:py-8">
+	<button onclick={() => goto('/home')}>
+    <AIcon path={mdiHome} size="36" class="text-gray-500"></AIcon>
+  </button>
 	<div class="text-2xl font-bold my-4">Beginners' Data</div>
 	{#if adminUser.admin}
-		<button class="text-white bg-green-500 px-2 py-1 font-bold rounded shadow my-4 flex items-center" onclick={() => goto('/beginner/admin/scan')}>
-			<AIcon path={mdiQrcode} class="mr-2"></AIcon>
-			Scan
-		</button>
+		<div class="flex items-center">
+			<button class="text-white bg-blue-500 px-2 py-1 font-bold rounded shadow my-4 flex items-center mr-2" onclick={() => goto('/beginner/admin/scan')}>
+				<AIcon path={mdiQrcode} class="mr-2"></AIcon>
+				Scan
+			</button>
+			<button class="text-white bg-green-500 px-2 py-1 font-bold rounded shadow my-4 flex items-center" onclick={downloadData}>
+				<AIcon path={mdiDownloadBox} class="mr-2"></AIcon>
+				Data
+			</button>
+		</div>
 		{#each beginnerList as beginner}
 			<div class="px-4 py-2 bg-white shadow rounded my-2 flex items-center">
 				<div class="font-bold whitespace-nowrap grow overflow-x-scroll">{users[beginner.uid].name}</div>

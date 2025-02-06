@@ -4,7 +4,7 @@
 	import { goto } from '$app/navigation'
   import { onAuthStateChanged } from 'firebase/auth'
 	import { AIcon } from 'ace.svelte'
-	import { mdiAccount } from '@mdi/js'
+	import { mdiAccount, mdiHome } from '@mdi/js'
 
 	let adminUser = $state({})
 	let userList = $state([])
@@ -29,6 +29,9 @@
 </script>
 
 <div class="w-screen min-h-screen bg-gray-100 p-4 md:px-16 md:py-8">
+	<button onclick={() => goto('/home')}>
+    <AIcon path={mdiHome} size="36" class="text-gray-500"></AIcon>
+  </button>
 	<div class="text-2xl font-bold my-4">Users' Profile</div>
 	{#if adminUser.admin}
 		{#each userList as u}

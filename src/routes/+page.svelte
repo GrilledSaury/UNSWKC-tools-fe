@@ -1,5 +1,6 @@
 <script>
   import { auth } from "$lib/firebase"
+  import { page } from '$app/stores'
 
   import {
     signInWithPopup,
@@ -19,6 +20,7 @@
   // let signInMode = $state(0) // 0 for start, 1 for signing up, 2 for signing in
 
   let loading = $state(false)
+  let toApp = $state($page.url.searchParams.get('app'))
 
   async function loginWithGoogle () {
     if (loading) return
@@ -44,7 +46,7 @@
       const db = getFirestore()
       const docRef = doc(db, 'user', resUser.uid)
       const docSnap = await getDoc(docRef)
-      if (docSnap.exists()) return goto('/home')
+      if (docSnap.exists()) return goto(toApp || '/home')
       else {
         await setDoc(docRef, {
           name: resUser.displayName,
@@ -52,7 +54,7 @@
           admin: false
         })
         loading = false
-        goto('/home')
+        goto(toApp || '/home')
       }
     } catch (err) {
       // Handle Errors here.
