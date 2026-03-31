@@ -84,7 +84,7 @@
     <AIcon path={mdiHome} size="36" class="text-gray-500"></AIcon>
   </button>
 	<div class="text-2xl font-bold my-4">Beginners' Data</div>
-	{#if $userProfile.admin}
+	{#if $userProfile.permissions?.includes('beginner')}
 		<div class="flex items-center">
 			<button class="text-white bg-blue-500 px-2 py-1 font-bold rounded shadow my-4 flex items-center mr-2" onclick={() => goto('/beginner/admin/scan')}>
 				<AIcon path={mdiQrcode} class="mr-2"></AIcon>

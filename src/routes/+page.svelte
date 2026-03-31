@@ -51,7 +51,7 @@
         await setDoc(docRef, {
           name: resUser.displayName,
           email: resUser.email,
-          admin: false
+          permissions: []
         })
         loading = false
         goto(toApp || '/home')
