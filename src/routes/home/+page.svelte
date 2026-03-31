@@ -1,41 +1,25 @@
 <script>
-  import { db } from '$lib/firebase'
-  import { getDoc, doc } from "firebase/firestore"
   import { mdiAccount, mdiLogout, mdiSchool } from '@mdi/js'
   import { AIcon, ASwitch } from 'ace.svelte'
-
   import { goto } from '$app/navigation'
-  import { getAuth, onAuthStateChanged } from "firebase/auth"
+  import { userProfile } from '$lib/stores'
 
-  const auth = getAuth()
-  const user = auth.currentUser
-  
-  let profile = $state({ name: '' })
   let adminMode = $state(false)
 
-  onAuthStateChanged(auth, async u => {
-    if (u === null) goto('/')
-    const docRef = doc(db, 'user', u.uid)
-    const docSnap = await getDoc(docRef)
-    if (docSnap.exists()) profile = docSnap.data()
-    else goto('/')
-  })
-
-  async function goProfile () {
+  function goProfile() {
     if (adminMode) goto('/profile/admin')
-    else goto('/profile/?uid=' + user.uid)
+    else goto('/profile/?uid=' + $userProfile.uid)
   }
 
-  async function goBeginner () {
+  function goBeginner() {
     if (adminMode) goto('/beginner/admin')
     else goto('/beginner')
   }
-
 </script>
 
 <div class="h-screen w-screen bg-gray-100 flex flex-col p-3 sm:p-10">
   <div class="flex items-center">
-    <h1 class="text-gray-700 font-bold text-3xl m-3">Welcome, {profile.name}</h1>
+    <h1 class="text-gray-700 font-bold text-3xl m-3">Welcome, {$userProfile.name}</h1>
     <div class="grow"></div>
     <button onclick={() => goto('/')}><AIcon class="text-red-500" path={mdiLogout}></AIcon></button>
   </div>
@@ -54,7 +38,7 @@
       <AIcon path={mdiSchool} class="text-yellow-500 mr-3 sm:mr-1"/>
       Beginner Course
     </button>
-    {#if profile.admin}
+    {#if $userProfile.admin}
       <label class="flex items-center m-2">
         <ASwitch bind:value={adminMode} />
         <div class="ml-2">Admin Mode</div>

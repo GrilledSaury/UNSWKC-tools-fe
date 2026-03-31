@@ -1,21 +1,15 @@
 <script>
-	import { db, auth } from '$lib/firebase'
-	import { getDoc, doc, getDocs, collection } from 'firebase/firestore'
+	import { db } from '$lib/firebase'
+	import { getDocs, collection } from 'firebase/firestore'
 	import { goto } from '$app/navigation'
-  import { onAuthStateChanged } from 'firebase/auth'
+  import { onMount } from 'svelte'
 	import { AIcon } from 'ace.svelte'
 	import { mdiAccount, mdiHome } from '@mdi/js'
+  import { userProfile } from '$lib/stores'
 
-	let adminUser = $state({})
 	let userList = $state([])
 
-	onAuthStateChanged(auth, async u => {
-		if (u === null) goto('/')
-		const docRef = doc(db, 'user', u.uid)
-    const docSnap = await getDoc(docRef)
-    if (docSnap.exists()) adminUser = docSnap.data()
-    else goto('/')
-
+	onMount(async () => {
 		const usersSnap = await getDocs(collection(db, 'user'))
 		usersSnap.forEach(doc => {
 			userList.push({ uid: doc.id, data: doc.data() })
@@ -25,7 +19,6 @@
 	async function goProfile (id) {
 		goto('/profile/?uid=' + id)
 	}
-
 </script>
 
 <div class="w-screen min-h-screen bg-gray-100 p-4 md:px-16 md:py-8">
@@ -33,7 +26,7 @@
     <AIcon path={mdiHome} size="36" class="text-gray-500"></AIcon>
   </button>
 	<div class="text-2xl font-bold my-4">Users' Profile</div>
-	{#if adminUser.admin}
+	{#if $userProfile.admin}
 		{#each userList as u}
 			<div class="px-4 py-2 bg-white shadow rounded my-2 flex items-center">
 				<div>

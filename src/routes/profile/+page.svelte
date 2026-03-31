@@ -3,20 +3,15 @@
   import { page } from '$app/stores'
   import Swal from "sweetalert2"
   import { goto } from '$app/navigation'
-  import { db, auth } from '$lib/firebase'
-  import { onAuthStateChanged } from "firebase/auth"
+  import { db } from '$lib/firebase'
+  import { onMount } from 'svelte'
   import { AIcon } from "ace.svelte"
   import { mdiHome } from "@mdi/js"
 
-  const user = auth.currentUser
-
   let profile = $state({})
   let profileId = $state($page.url.searchParams.get('uid'))
-  let uid = $state('')
 
-  onAuthStateChanged(auth, async u => {
-    if (u === null) goto('/')
-    uid = u.uid
+  onMount(async () => {
     const docRef = doc(db, 'user', $page.url.searchParams.get('uid'))
     const docSnap = await getDoc(docRef)
     if (docSnap.exists()) profile = docSnap.data()
@@ -35,7 +30,6 @@
       console.log(err)
     }
   }
-  
 </script>
 
 <div class="w-screen h-screen bg-gray-100 p-4 md:px-16 md:py-8">

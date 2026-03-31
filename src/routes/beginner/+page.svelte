@@ -4,20 +4,21 @@
   import { ACheckbox, AIcon } from 'ace.svelte'
   import Swal from 'sweetalert2'
   import { goto } from '$app/navigation'
-  import { onAuthStateChanged } from 'firebase/auth'
+  import { onMount } from 'svelte'
   import { mdiAccount, mdiCheck, mdiHome, mdiImageSearch } from '@mdi/js'
   import { getDownloadURL, ref, uploadBytes } from 'firebase/storage'
   import QRCode from 'qrcode'
+  import { userProfile } from '$lib/stores'
 
   let beginner = $state({ join: false })
   let files = $state()
   let previewUrl = $state('')
   let uploading = $state(false)
-  const getUid = () => auth.currentUser.uid
+  const getUid = () => $userProfile.uid
 
-  onAuthStateChanged(auth, async u => {
-    if (u === null) goto('/')
-    const beginnerRef = doc(db, 'beginner', u.uid)
+  onMount(async () => {
+    const uid = $userProfile.uid
+    const beginnerRef = doc(db, 'beginner', uid)
     const beginnerSnap = await getDoc(beginnerRef)
     if (beginnerSnap.exists()) beginner = beginnerSnap.data()
     else {
@@ -86,7 +87,7 @@ async function showQRCode () {
     <AIcon path={mdiHome} size="36" class="text-gray-500"></AIcon>
   </button>
   <div class="text-2xl font-bold my-4">Beginner Course</div>
-  <button class="px-4 py-2 font-bold bg-white rounded shadow text-blue-500 my-4 flex items-center" onclick={() => goto('/profile/?uid=' + auth.currentUser.uid)}>
+  <button class="px-4 py-2 font-bold bg-white rounded shadow text-blue-500 my-4 flex items-center" onclick={() => goto('/profile/?uid=' + $userProfile.uid)}>
     <AIcon path={mdiAccount} class="mr-2"></AIcon>
     Update my details
   </button>
@@ -98,10 +99,10 @@ async function showQRCode () {
     <br>Proposed schedule:
     <br>19th Feb 7:30pm - 9:00pm
     <br>26th Feb 7:30pm - 9:00pm
-    <br>5th Mar 7:30pm - 9:00pm 
+    <br>5th Mar 7:30pm - 9:00pm
     <br>12th Mar 7:30pm - 9:00pm
     <br>
-    <br>Location: 
+    <br>Location:
     <br>UNSW Fitness and Aquatic Centre (B5), Gate 2, High St, UNSW Sydney, Kensington NSW 2052
     <br>Group Fitness Room 1 (Courtside Studio), Level 1
     <br>
@@ -112,7 +113,7 @@ async function showQRCode () {
     <br>
     <br>
     <br>Uniforms are not required - just come in loose, comfortable clothes.
-    <br>All equipment is provided to students at no additional cost. 
+    <br>All equipment is provided to students at no additional cost.
     <br>
     <br>BANK DETAILS:
     <br>Please make your payment to the following account:
