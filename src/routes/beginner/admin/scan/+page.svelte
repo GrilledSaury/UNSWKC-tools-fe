@@ -2,7 +2,8 @@
 	import { BrowserMultiFormatReader } from '@zxing/library'
 	import { doc, getDoc, updateDoc } from 'firebase/firestore'
 	import { db } from '$lib/firebase'
-  import Swal from 'sweetalert2'
+	import Swal from 'sweetalert2'
+	import { onDestroy } from 'svelte'
 
 	const reader = new BrowserMultiFormatReader()
 	let device = $state(true), video = $state()
@@ -31,10 +32,12 @@
 			const { text } = await reader.decodeFromInputVideoDevice(device.deviceId, video)
 			setTimeout(() => showBeginner(text))
 		} catch {
-			return Swal.fire('Error', 'Scan Failed', 'error')
+			return Swal.fire('Error', 'Scan Failed/Cancelled', 'error')
 		}
 	}
 	init().then(decode)
+
+	onDestroy(() => reader.reset())
 
 	async function showBeginner (uid) {
     const userRef = doc(db, 'user', uid)
