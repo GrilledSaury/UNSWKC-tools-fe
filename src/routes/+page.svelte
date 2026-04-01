@@ -12,6 +12,7 @@
   import { setDoc, doc, getDoc, getFirestore } from "firebase/firestore"
 
   import { goto } from '$app/navigation'
+  import { userProfile } from '$lib/stores'
 
   // let hint = $state('')
   // let email = $state('')
@@ -48,11 +49,13 @@
       const docSnap = await getDoc(docRef)
       if (docSnap.exists()) return goto(toApp || '/home')
       else {
-        await setDoc(docRef, {
+        const newProfile = {
           name: resUser.displayName,
           email: resUser.email,
           permissions: []
-        })
+        }
+        await setDoc(docRef, newProfile)
+        userProfile.set({ ...newProfile, uid: resUser.uid })
         loading = false
         goto(toApp || '/home')
       }
