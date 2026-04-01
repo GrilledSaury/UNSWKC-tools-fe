@@ -10,30 +10,77 @@
   import QRCode from 'qrcode'
   import { userProfile } from '$lib/stores'
 
+  const DEFAULT_CONFIG = {
+    title: 'Beginner Course 26T2.',
+    content:
+`Thank you for your interest in our club! Our upcoming Beginners Course is expected to commence on Wednesday 19th Feburary (Term 1 week 1). Classes will be held on Wednesday weekly from 7:30 pm to 9:00 pm.
+This course is mandatory for any beginners intending to take up Kendo.
+During the course, you will learn the fundamental footwork, swinging/cutting techniques and etiquette in Kendo.
+
+Proposed schedule:
+. 7:30pm - 9:00pm
+. 7:30pm - 9:00pm
+. 7:30pm - 9:00pm
+. 7:30pm - 9:00pm
+
+Location:
+UNSW Fitness and Aquatic Centre (B5), Gate 2, High St, UNSW Sydney, Kensington NSW 2052
+Group Fitness Room 1 (Courtside Studio), Level 1
+
+Cost:
+$. - UNSW Students
+$. - UNSW Alumni/Staff/Other Students
+$. - Members of the Public
+
+Uniforms are not required - just come in loose, comfortable clothes.
+All equipment is provided to students at no additional cost.
+
+BANK DETAILS:
+Please make your payment to the following account:
+NAME: UNSW KENDO CLUB
+BSB: 062 303
+ACCOUNT NUMBER: 1088 6082
+BANK: Commonwealth Bank
+DESCRIPTION: 'Beginner Course [your initials]' (eg. "Beginners Course JS" for John Smith)
+
+Any further information regarding the course will be sent through email prior to the trainings
+
+As usual, please don't hesitate to contact us by 𝒊𝒏𝒇𝒐𝒓𝒎𝒂𝒕𝒊𝒐𝒏@𝒖𝒏𝒔𝒘𝒌𝒆𝒏𝒅𝒐.𝒐𝒓𝒈 if you have any questions.`
+  }
+
+  let config = $state({ ...DEFAULT_CONFIG })
   let beginner = $state({ join: false })
   let files = $state()
   let previewUrl = $state('')
   let uploading = $state(false)
+  let loadingMessage = $state('')
   const getUid = () => $userProfile.uid
 
   onMount(async () => {
     const uid = $userProfile.uid
-    const beginnerRef = doc(db, 'beginner', uid)
-    const beginnerSnap = await getDoc(beginnerRef)
+
+    const [configSnap, beginnerSnap] = await Promise.all([
+      getDoc(doc(db, 'config', 'beginner')),
+      getDoc(doc(db, 'beginner', uid)),
+    ])
+
+    if (configSnap.exists()) config = configSnap.data()
+
     if (beginnerSnap.exists()) beginner = beginnerSnap.data()
     else {
-      await setDoc(beginnerRef, {
+      await setDoc(doc(db, 'beginner', uid), {
         join: false,
         activated: false,
         progress: [false, false, false, false]
       })
-      beginner = (await getDoc(beginnerRef)).data()
+      beginner = (await getDoc(doc(db, 'beginner', uid))).data()
     }
   })
 
   async function upload () {
     if (!files[0] || uploading) return
     uploading = true
+    loadingMessage = 'Uploading receipt...'
     const path = `/${getUid()}/beginner/receipt-${files[0].name}`
     const receiptRef = ref(storage, path)
     try {
@@ -45,15 +92,23 @@
       Swal.fire('Error', err.message, 'error')
     }
     uploading = false
+    loadingMessage = ''
   }
 
   async function preview () {
+    loadingMessage = 'Loading image...'
     try {
       if (!previewUrl) previewUrl = await getDownloadURL(ref(storage, beginner.filePath))
-      Swal.fire({
-        imageUrl: previewUrl
+      await new Promise((resolve, reject) => {
+        const img = new Image()
+        img.onload = resolve
+        img.onerror = reject
+        img.src = previewUrl
       })
+      loadingMessage = ''
+      Swal.fire({ imageUrl: previewUrl })
     } catch (err) {
+      loadingMessage = ''
       Swal.fire('Error', err.message, 'error')
     }
   }
@@ -91,45 +146,10 @@ async function showQRCode () {
     <AIcon path={mdiAccount} class="mr-2"></AIcon>
     Update my details
   </button>
-  <div class="h-96 my-2 overflow-scroll bg-white p-4 rounded">
-    Thank you for your interest in our club! Our upcoming Beginners Course is expected to commence on Wednesday 19th Feburary (Term 1 week 1). Classes will be held on Wednesday weekly from 7:30 pm to 9:00 pm.
-    <br>This course is mandatory for any beginners intending to take up Kendo.
-    <br>During the course, you will learn the fundamental footwork, swinging/cutting techniques and etiquette in Kendo.
-    <br>
-    <br>Proposed schedule:
-    <br>19th Feb 7:30pm - 9:00pm
-    <br>26th Feb 7:30pm - 9:00pm
-    <br>5th Mar 7:30pm - 9:00pm
-    <br>12th Mar 7:30pm - 9:00pm
-    <br>
-    <br>Location:
-    <br>UNSW Fitness and Aquatic Centre (B5), Gate 2, High St, UNSW Sydney, Kensington NSW 2052
-    <br>Group Fitness Room 1 (Courtside Studio), Level 1
-    <br>
-    <br>Cost:
-    <br>$40 - UNSW Students
-    <br>$45 - UNSW Alumni/Staff/Other Students
-    <br>$50 - Members of the Public
-    <br>
-    <br>
-    <br>Uniforms are not required - just come in loose, comfortable clothes.
-    <br>All equipment is provided to students at no additional cost.
-    <br>
-    <br>BANK DETAILS:
-    <br>Please make your payment to the following account:
-    <br>NAME: UNSW KENDO CLUB
-    <br>BSB: 062 303
-    <br>ACCOUNT NUMBER: 1088 6082
-    <br>BANK: Commonwealth Bank
-    <br>DESCRIPTION: 'Beginner Course [your initials]' (eg. "Beginners Course JS" for John Smith)
-    <br>
-    <br>Any further information regarding the course will be sent through email prior to the trainings
-    <br>
-    <br>As usual, please don't hesitate to contact us by 𝒊𝒏𝒇𝒐𝒓𝒎𝒂𝒕𝒊𝒐𝒏@𝒖𝒏𝒔𝒘𝒌𝒆𝒏𝒅𝒐.𝒐𝒓𝒈 if you have any questions.
-  </div>
+  <div class="h-96 my-2 overflow-scroll bg-white p-4 rounded whitespace-pre-wrap">{config.content}</div>
   <div class="flex items-center">
     <ACheckbox bind:value={beginner.join} />
-    <div class="ml-2">Yes, I will come to Beginner Course 25T1.</div>
+    <div class="ml-2">Yes, I will come to {config.title}</div>
   </div>
   <div class="my-2 flex items-center">
     <label class="px-4 py-2 font-bold bg-white rounded shadow text-blue-500 my-4 mr-2">
@@ -159,3 +179,11 @@ async function showQRCode () {
     </div>
   {/if}
 </div>
+
+{#if loadingMessage}
+  <div class="fixed inset-0 bg-black bg-opacity-60 flex flex-col items-center justify-center z-50">
+    <div class="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin mb-4"></div>
+    <div class="text-white font-bold text-lg">{loadingMessage}</div>
+    <div class="text-white text-sm mt-1">Please do not close this page</div>
+  </div>
+{/if}
