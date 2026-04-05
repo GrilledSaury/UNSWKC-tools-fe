@@ -1,5 +1,5 @@
 <script>
-  import { mdiAccount, mdiLogout, mdiSchool, mdiAccountGroup } from '@mdi/js'
+  import { mdiAccount, mdiLogout, mdiSchool, mdiAccountGroup, mdiCalendarCheck } from '@mdi/js'
   import { AIcon } from 'ace.svelte'
   import { goto } from '$app/navigation'
   import { userProfile } from '$lib/stores'
@@ -14,6 +14,7 @@
   const permissionApps = [
     { permission: 'beginner', label: "Beginners' Admin", icon: mdiSchool, color: 'text-orange-500', href: '/beginner/admin' },
     { permission: 'profile', label: "Users' Admin", icon: mdiAccountGroup, color: 'text-blue-700', href: '/profile/admin' },
+    { permission: 'attendance', label: 'Attendance', icon: mdiCalendarCheck, color: 'text-green-600', href: '/attendance/admin' },
   ]
 </script>
 
