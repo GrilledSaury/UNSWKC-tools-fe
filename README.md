@@ -57,7 +57,7 @@ Each user doc has a `permissions: string[]` field. Pages check this array to gra
 | `attendance` | Attendance admin (`/attendance/admin`) |
 | `bogu` | Bogu Log (`/bogu/admin`) |
 
-Permissions are managed manually in the Firebase console. There is no super-admin role — every permission is explicit.
+Permissions are managed manually in the Firebase console. Every permission is explicit.
 
 The home page (`/home`) renders app cards based on the user's permissions. Base apps (profile, beginner course) are visible to all authenticated users.
 
