@@ -12,8 +12,8 @@
 
   // ── State ──────────────────────────────────────────────────────────────────
 
-  const PIECES = ['Men', 'Kote', 'Do', 'Tare']
-  const emptyItem = () => ({ men: false, kote: false, do: false, tare: false })
+  const PIECES = ['Men', 'Kote', 'Do', 'Tare', 'Shinai Bag', 'Bogu Bag']
+  const emptyItem = () => ({ men: false, kote: false, do: false, tare: false, 'shinai bag': false, 'bogu bag': false })
 
   let entries       = $state([])   // { id, name, item: {men,kote,do,tare}, note, score }
   let attendanceMap = {}           // name → attendance data, kept for score lookups
