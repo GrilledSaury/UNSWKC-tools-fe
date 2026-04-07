@@ -1,4 +1,4 @@
-# UNSWKC Tools — Frontend
+# UNSWKC Tools Frontend
 
 Internal management app for UNSW Kendo Club. Built with SvelteKit 5 + Firebase.
 
