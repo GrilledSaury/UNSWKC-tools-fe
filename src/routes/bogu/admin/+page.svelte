@@ -2,7 +2,7 @@
   import { onMount } from 'svelte'
   import { db } from '$lib/firebase'
   import {
-    collection, doc, getDocs, addDoc, updateDoc, deleteDoc
+    collection, doc, getDocs, addDoc, updateDoc, deleteDoc,
   } from 'firebase/firestore'
   import { AIcon } from 'ace.svelte'
   import { mdiHome, mdiPlus, mdiPencil, mdiDelete, mdiCheck, mdiClose } from '@mdi/js'
@@ -35,29 +35,32 @@
 
   // ── Attendance helpers ─────────────────────────────────────────────────────
 
-  // Returns the last N Mon/Wed/Fri dates as 'YYYY/MM/DD' strings, newest-first
+  const DAY_ABBR = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+
+  // Returns the last N Mon/Wed/Fri session keys as 'YYYY-MM-DD-DayAbbr', newest-first
   function lastNTrainingDates(n) {
     const dates = []
     const d = new Date()
     d.setHours(0, 0, 0, 0)
     while (dates.length < n) {
-      if ([1, 3, 5].includes(d.getDay())) {
+      const day = d.getDay()
+      if ([1, 3, 5].includes(day)) {
         const y  = d.getFullYear()
         const m  = String(d.getMonth() + 1).padStart(2, '0')
         const dd = String(d.getDate()).padStart(2, '0')
-        dates.push(`${y}/${m}/${dd}`)
+        dates.push(`${y}-${m}-${dd}-${DAY_ABBR[day]}`)
       }
       d.setDate(d.getDate() - 1)
     }
     return dates  // newest first
   }
 
-  const LAST_12 = lastNTrainingDates(12)  // last 4 weeks = 12 sessions (Mon/Wed/Fri)
+  const LAST_12 = lastNTrainingDates(12)  // last 4 weeks = 12 sessions
 
-  // Returns count of attended sessions in LAST_12 for a given attendance doc data
+  // Field existence = attended; no field = absent
   function attendanceScore(data) {
     if (!data) return 0
-    return LAST_12.reduce((sum, date) => sum + (data[date] ?? 0), 0)
+    return LAST_12.reduce((sum, key) => sum + (data[key] != null ? 1 : 0), 0)
   }
 
   // 0–12 → colour from red → yellow → green
@@ -85,21 +88,26 @@
   async function load() {
     loading = true
     try {
-      const [boguSnap, attendanceSnap] = await Promise.all([
-        getDocs(collection(db, 'bogu')),
-        getDocs(collection(db, 'attendance')),
-      ])
+      const boguSnap = await getDocs(collection(db, 'bogu'))
 
-      attendanceSnap.forEach(d => {
-        attendanceMap[d.id] = d.data().data ?? {}
+      // Collect unique userIds to fetch attendance subcollections in parallel
+      const userIds = [...new Set(
+        boguSnap.docs.map(d => d.data().userId).filter(Boolean)
+      )]
+      const attSnaps = await Promise.all(
+        userIds.map(uid => getDocs(collection(db, 'attendance', uid, 'sessions')))
+      )
+      attSnaps.forEach((snap, i) => {
+        attendanceMap[userIds[i]] = {}
+        snap.forEach(d => { attendanceMap[userIds[i]][d.id] = d.data() })
       })
 
       const list = []
       boguSnap.forEach(d => {
         const data  = d.data()
-        const score = attendanceScore(attendanceMap[data.name])
         const item  = (data.item && typeof data.item === 'object') ? data.item : emptyItem()
-        list.push({ id: d.id, name: data.name, item, note: data.note, score })
+        const score = attendanceScore(data.userId ? attendanceMap[data.userId] : null)
+        list.push({ id: d.id, name: data.name, userId: data.userId ?? null, item, note: data.note, score })
       })
       entries = list
     } catch (err) {
@@ -134,7 +142,7 @@
       }
       if (modalMode === 'add') {
         const ref = await addDoc(collection(db, 'bogu'), payload)
-        const score = attendanceScore(attendanceMap[payload.name])
+        const score = attendanceScore(payload.userId ? (attendanceMap[payload.userId] ?? null) : null)
         entries.push({ id: ref.id, ...payload, score })
       } else {
         await updateDoc(doc(db, 'bogu', editEntry.id), payload)

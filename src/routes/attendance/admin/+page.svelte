@@ -1,360 +1,357 @@
 <script>
   import { onMount } from 'svelte'
   import { db } from '$lib/firebase'
-  import { collection, doc, getDoc, getDocs, setDoc } from 'firebase/firestore'
+  import {
+    collection, doc, getDoc, getDocs, setDoc, deleteDoc,
+    query, where, orderBy, Timestamp, documentId,
+  } from 'firebase/firestore'
   import { AIcon } from 'ace.svelte'
   import {
-    mdiHome, mdiPlus, mdiUpload, mdiDownload, mdiContentSave,
-    mdiChevronLeft, mdiChevronRight
+    mdiHome, mdiPlus, mdiDelete, mdiQrcode,
+    mdiEye, mdiEyeOff, mdiChevronLeft, mdiChevronRight, mdiRefresh,
   } from '@mdi/js'
   import { goto } from '$app/navigation'
   import { userProfile } from '$lib/stores'
   import Swal from 'sweetalert2'
+  import QRCode from 'qrcode'
 
   const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December']
-  const DAY_ABBR = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+  const DAY_ABBR    = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+
+  // Default start/end for standard training days (Mon=1, Wed=3, Fri=5)
+  const TRAINING_DEFAULTS = {
+    1: { start: '19:00', end: '21:30' },
+    3: { start: '19:00', end: '21:30' },
+    5: { start: '19:30', end: '21:30' },
+  }
 
   const now = new Date()
   let selectedYear  = $state(now.getFullYear())
-  let selectedMonth = $state(now.getMonth()) // 0-indexed
+  let selectedMonth = $state(now.getMonth())
 
-  let trainingDates = $state([])  // 'YYYY/MM/DD' strings
-  let rows          = $state([])  // { name, userId, data: Record<string,0|1>, locked }
-  let allUsers      = $state([])  // { uid, name } — for name matching
+  let salt        = $state('')
+  let saltVisible = $state(false)
+  let savingSalt  = $state(false)
 
-  let loaded  = $state(false)
-  let loading = $state(false)
-  let saving  = $state(false)
+  let sessions = $state([])  // { id, start: Date, end: Date, passcode }
+  let loading  = $state(true)
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
+  let showAddModal  = $state(false)
+  let addForm       = $state({ date: '', startTime: '19:00', endTime: '21:30' })
+  let savingSession = $state(false)
 
-  function getTrainingDates(year, month) {
-    const dates = []
-    const d = new Date(year, month, 1)
-    while (d.getMonth() === month) {
-      if ([1, 3, 5].includes(d.getDay())) { // Mon, Wed, Fri
-        const y  = d.getFullYear()
-        const m  = String(d.getMonth() + 1).padStart(2, '0')
-        const dd = String(d.getDate()).padStart(2, '0')
-        dates.push(`${y}/${m}/${dd}`)
-      }
-      d.setDate(d.getDate() + 1)
-    }
-    return dates
+  // ── Passcode ───────────────────────────────────────────────────────────────
+
+  async function generatePasscode(saltStr, sessionId) {
+    const data       = new TextEncoder().encode(saltStr + sessionId)
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+    return Array.from(new Uint8Array(hashBuffer))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('')
+      .slice(0, 8)
   }
 
-  function formatHeader(dateStr) {
-    const [y, m, d] = dateStr.split('/').map(Number)
-    const date = new Date(y, m - 1, d)
-    return { day: DAY_ABBR[date.getDay()], date: d }
+  function makeRandomSalt() {
+    return Array.from(crypto.getRandomValues(new Uint8Array(16)))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('')
   }
 
-  function matchUser(name) {
-    return allUsers.find(
-      u => u.name.trim().toLowerCase() === name.trim().toLowerCase()
-    )?.uid ?? null
+  // ── Salt ───────────────────────────────────────────────────────────────────
+
+  async function loadSalt() {
+    const snap = await getDoc(doc(db, 'config', 'attendance'))
+    if (snap.exists()) salt = snap.data().salt ?? ''
   }
 
-  // ── Data loading ───────────────────────────────────────────────────────────
-
-  async function loadMonth() {
-    loading = true
-    trainingDates = getTrainingDates(selectedYear, selectedMonth)
+  async function saveSalt() {
+    if (savingSalt) return
+    savingSalt = true
     try {
-      const snap = await getDocs(collection(db, 'attendance'))
-      const newRows = []
-      snap.forEach(docSnap => {
-        const data = docSnap.data()
-        const monthData = Object.fromEntries(
-          trainingDates.map(date => [date, data.data?.[date] ?? 0])
-        )
-        newRows.push({
-          name:   docSnap.id,
-          userId: data.userId ?? null,
-          data:   monthData,
-          locked: true,
-        })
-      })
-      rows   = newRows
-      loaded = true
+      await setDoc(doc(db, 'config', 'attendance'), { salt })
+      Swal.fire('Salt saved!', '', 'success')
+    } catch (err) {
+      Swal.fire('Error', err.message, 'error')
+    }
+    savingSalt = false
+  }
+
+  async function regenerateSalt() {
+    const { isConfirmed } = await Swal.fire({
+      title: 'Regenerate salt?',
+      text: 'All existing QR codes will become invalid.',
+      confirmButtonText: 'Regenerate',
+      confirmButtonColor: '#ef4444',
+      showCancelButton: true,
+    })
+    if (!isConfirmed) return
+    salt = makeRandomSalt()
+    await saveSalt()
+  }
+
+  // ── Sessions ───────────────────────────────────────────────────────────────
+
+  async function loadSessions() {
+    loading = true
+    const mm    = String(selectedMonth + 1).padStart(2, '0')
+    const start = `${selectedYear}-${mm}-01`
+    const end   = `${selectedYear}-${mm}-32`
+    try {
+      const q    = query(
+        collection(db, 'session'),
+        where(documentId(), '>=', start),
+        where(documentId(), '<=', end),
+        orderBy(documentId()),
+      )
+      const snap = await getDocs(q)
+      sessions = snap.docs.map(d => ({
+        id:       d.id,
+        start:    d.data().start.toDate(),
+        end:      d.data().end.toDate(),
+        passcode: d.data().passcode,
+      }))
     } catch (err) {
       Swal.fire('Error', err.message, 'error')
     }
     loading = false
   }
 
-  // ── Month navigation ───────────────────────────────────────────────────────
-
-  async function prevMonth() {
-    if (selectedMonth === 0) { selectedMonth = 11; selectedYear-- }
-    else selectedMonth--
-    await loadMonth()
-  }
-
-  async function nextMonth() {
-    if (selectedMonth === 11) { selectedMonth = 0; selectedYear++ }
-    else selectedMonth++
-    await loadMonth()
-  }
-
-  // ── Table interactions ─────────────────────────────────────────────────────
-
-  function toggle(row, date) {
-    row.data[date] = row.data[date] ? 0 : 1
-  }
-
-  function addRow() {
-    const emptyData = Object.fromEntries(trainingDates.map(d => [d, 0]))
-    rows.push({ name: '', userId: null, data: emptyData, locked: false })
-  }
-
-  function onNameInput(row) {
-    if (row.name.trim()) row.userId = matchUser(row.name)
-  }
-
-  // ── CSV import ─────────────────────────────────────────────────────────────
-
-  function importCSV() {
-    const input = document.createElement('input')
-    input.type   = 'file'
-    input.accept = '.csv,text/csv'
-    input.onchange = async (e) => {
-      const file = e.target.files[0]
-      if (!file) return
-      const text  = await file.text()
-      const lines = text.trim().split('\n')
-      let imported = 0
-      for (const line of lines) {
-        const parts  = line.split(',').map(s => s.trim())
-        const name   = parts[0]
-        if (!name) continue
-        const values = parts.slice(1).map(v => (parseInt(v) >= 1 ? 1 : 0))
-        const data   = Object.fromEntries(
-          trainingDates.map((d, i) => [d, values[i] ?? 0])
-        )
-        const existing = rows.find(
-          r => r.name.trim().toLowerCase() === name.toLowerCase()
-        )
-        if (existing) {
-          Object.assign(existing.data, data)
-          if (!existing.userId) existing.userId = matchUser(name)
-        } else {
-          rows.push({ name, userId: matchUser(name), data, locked: false })
-        }
-        imported++
-      }
-      Swal.fire('Imported', `${imported} row${imported !== 1 ? 's' : ''} processed`, 'success')
+  async function generateStandard() {
+    if (!salt) {
+      Swal.fire('No salt set', 'Set a salt first.', 'warning')
+      return
     }
-    input.click()
-  }
-
-  // ── CSV template download ──────────────────────────────────────────────────
-
-  function downloadTemplate() {
-    const header   = ['Name', ...trainingDates].join(',')
-    const dataRows = rows.map(r =>
-      [r.name, ...trainingDates.map(d => r.data[d] ?? 0)].join(',')
-    )
-    const csv  = [header, ...dataRows].join('\n')
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-    const url  = URL.createObjectURL(blob)
-    const a    = document.createElement('a')
-    a.href     = url
-    a.download = `Attendance ${MONTH_NAMES[selectedMonth]} ${selectedYear}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
-  // ── Save ───────────────────────────────────────────────────────────────────
-
-  async function save() {
-    if (saving) return
-    saving = true
+    const mm      = String(selectedMonth + 1).padStart(2, '0')
+    const existing = new Set(sessions.map(s => s.id))
+    const toCreate = []
+    const d = new Date(selectedYear, selectedMonth, 1)
+    while (d.getMonth() === selectedMonth) {
+      const day = d.getDay()
+      if (day in TRAINING_DEFAULTS) {
+        const dd  = String(d.getDate()).padStart(2, '0')
+        const id  = `${selectedYear}-${mm}-${dd}-${DAY_ABBR[day]}`
+        if (!existing.has(id)) {
+          toCreate.push({ id, date: `${selectedYear}-${mm}-${dd}`, ...TRAINING_DEFAULTS[day] })
+        }
+      }
+      d.setDate(d.getDate() + 1)
+    }
+    if (toCreate.length === 0) {
+      Swal.fire('All sessions already exist', '', 'info')
+      return
+    }
+    loading = true
     try {
-      for (const row of rows) {
-        if (!row.name.trim()) continue
-        const docRef  = doc(db, 'attendance', row.name.trim())
-        const existing = await getDoc(docRef)
-        const existingData = existing.exists() ? (existing.data().data ?? {}) : {}
-        await setDoc(docRef, {
-          userId: row.userId ?? null,
-          data:   { ...existingData, ...row.data },
+      for (const s of toCreate) {
+        const passcode = await generatePasscode(salt, s.id)
+        await setDoc(doc(db, 'session', s.id), {
+          start:    Timestamp.fromDate(new Date(`${s.date}T${s.start}:00`)),
+          end:      Timestamp.fromDate(new Date(`${s.date}T${s.end}:00`)),
+          passcode,
         })
       }
-      Swal.fire('Saved!', '', 'success')
+      Swal.fire('Generated!', `${toCreate.length} sessions created`, 'success')
+      await loadSessions()
+    } catch (err) {
+      Swal.fire('Error', err.message, 'error')
+      loading = false
+    }
+  }
+
+  async function saveCustomSession() {
+    if (!addForm.date || !addForm.startTime || !addForm.endTime) return
+    if (!salt) { Swal.fire('No salt set', 'Set a salt first.', 'warning'); return }
+    if (savingSession) return
+    savingSession = true
+    try {
+      const dayAbbr  = DAY_ABBR[new Date(addForm.date + 'T12:00:00').getDay()]
+      const id       = `${addForm.date}-${dayAbbr}`
+      const passcode = await generatePasscode(salt, id)
+      await setDoc(doc(db, 'session', id), {
+        start:    Timestamp.fromDate(new Date(`${addForm.date}T${addForm.startTime}:00`)),
+        end:      Timestamp.fromDate(new Date(`${addForm.date}T${addForm.endTime}:00`)),
+        passcode,
+      })
+      showAddModal = false
+      await loadSessions()
     } catch (err) {
       Swal.fire('Error', err.message, 'error')
     }
-    saving = false
+    savingSession = false
+  }
+
+  async function deleteSession(session) {
+    const { isConfirmed } = await Swal.fire({
+      title: 'Delete session?',
+      text: session.id,
+      confirmButtonText: 'Delete',
+      confirmButtonColor: '#ef4444',
+      showCancelButton: true,
+    })
+    if (!isConfirmed) return
+    try {
+      await deleteDoc(doc(db, 'session', session.id))
+      sessions = sessions.filter(s => s.id !== session.id)
+    } catch (err) {
+      Swal.fire('Error', err.message, 'error')
+    }
+  }
+
+  // ── QR ─────────────────────────────────────────────────────────────────────
+
+  async function downloadQR(session) {
+    const url    = `${window.location.origin}/attend?s=${session.id}&p=${session.passcode}`
+    const dataUrl = await QRCode.toDataURL(url, { width: 512, margin: 2 })
+    const a = document.createElement('a')
+    a.href     = dataUrl
+    a.download = `QR-${session.id}.png`
+    a.click()
+  }
+
+  // ── Month nav ──────────────────────────────────────────────────────────────
+
+  async function prevMonth() {
+    if (selectedMonth === 0) { selectedMonth = 11; selectedYear-- } else selectedMonth--
+    await loadSessions()
+  }
+  async function nextMonth() {
+    if (selectedMonth === 11) { selectedMonth = 0; selectedYear++ } else selectedMonth++
+    await loadSessions()
+  }
+
+  // ── Format ─────────────────────────────────────────────────────────────────
+
+  function fmtDate(d) {
+    return d.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  }
+  function fmtTime(d) {
+    return d.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })
   }
 
   // ── Init ───────────────────────────────────────────────────────────────────
 
   onMount(async () => {
-    if (!$userProfile?.permissions?.includes('attendance')) {
-      goto('/home')
-      return
-    }
-    const snap = await getDocs(collection(db, 'user'))
-    snap.forEach(d => allUsers.push({ uid: d.id, name: d.data().name }))
-    await loadMonth()
+    if (!$userProfile?.permissions?.includes('attendance')) { goto('/home'); return }
+    await Promise.all([loadSalt(), loadSessions()])
   })
 </script>
 
 <div class="w-screen min-h-screen bg-gray-100 p-4 md:px-16 md:py-8">
 
-  <!-- Top bar -->
   <button onclick={() => goto('/home')}>
     <AIcon path={mdiHome} size="36" class="text-gray-500" />
   </button>
-  <div class="text-2xl font-bold my-4">Attendance</div>
+  <div class="text-2xl font-bold mt-4 mb-6">Attendance Sessions</div>
 
-  <!-- Controls -->
-  <div class="flex items-center flex-wrap gap-2 mb-4">
-
-    <!-- Month navigator -->
-    <div class="flex items-center bg-white rounded shadow px-1 py-1">
+  <!-- Salt config -->
+  <div class="bg-white rounded shadow px-4 py-3 mb-6">
+    <div class="text-sm font-bold text-gray-500 mb-2">QR Salt</div>
+    <div class="flex items-center gap-2">
+      <input
+        class="border rounded px-2 py-1 font-mono text-sm grow min-w-0"
+        type={saltVisible ? 'text' : 'password'}
+        bind:value={salt}
+        placeholder="No salt set — click Regenerate to create one"
+      />
+      <button class="text-gray-400 p-1 shrink-0" onclick={() => saltVisible = !saltVisible}>
+        <AIcon path={saltVisible ? mdiEyeOff : mdiEye} />
+      </button>
       <button
-        class="text-gray-600 hover:text-gray-900 disabled:opacity-40 p-1"
-        onclick={prevMonth}
-        disabled={loading}
+        class="bg-gray-500 text-white font-bold px-3 py-1 rounded text-sm shrink-0 disabled:opacity-50"
+        onclick={saveSalt} disabled={savingSalt}
+      >Save</button>
+      <button
+        class="bg-red-500 text-white font-bold px-3 py-1 rounded text-sm flex items-center gap-1 shrink-0"
+        onclick={regenerateSalt}
       >
+        <AIcon path={mdiRefresh} size="18" />Regenerate
+      </button>
+    </div>
+  </div>
+
+  <!-- Month controls -->
+  <div class="flex items-center flex-wrap gap-2 mb-4">
+    <div class="flex items-center bg-white rounded shadow px-1 py-1">
+      <button class="text-gray-600 p-1 disabled:opacity-40" onclick={prevMonth} disabled={loading}>
         <AIcon path={mdiChevronLeft} />
       </button>
-      <span class="font-bold mx-2 w-44 text-center">
-        {MONTH_NAMES[selectedMonth]} {selectedYear}
-      </span>
-      <button
-        class="text-gray-600 hover:text-gray-900 disabled:opacity-40 p-1"
-        onclick={nextMonth}
-        disabled={loading}
-      >
+      <span class="font-bold mx-2 w-44 text-center">{MONTH_NAMES[selectedMonth]} {selectedYear}</span>
+      <button class="text-gray-600 p-1 disabled:opacity-40" onclick={nextMonth} disabled={loading}>
         <AIcon path={mdiChevronRight} />
       </button>
     </div>
-
-    {#if loaded && !loading}
-      <button
-        class="bg-purple-500 text-white font-bold px-3 py-1 rounded shadow flex items-center"
-        onclick={importCSV}
-      >
-        <AIcon path={mdiUpload} class="mr-1" />Import CSV
-      </button>
-      <button
-        class="bg-gray-500 text-white font-bold px-3 py-1 rounded shadow flex items-center"
-        onclick={downloadTemplate}
-      >
-        <AIcon path={mdiDownload} class="mr-1" />Template
-      </button>
-      <button
-        class="bg-green-500 text-white font-bold px-3 py-1 rounded shadow flex items-center"
-        onclick={addRow}
-      >
-        <AIcon path={mdiPlus} class="mr-1" />Add Row
-      </button>
-      <div class="grow"></div>
-      <button
-        class="bg-blue-600 text-white font-bold px-3 py-1 rounded shadow flex items-center disabled:opacity-50"
-        onclick={save}
-        disabled={saving}
-      >
-        <AIcon path={mdiContentSave} class="mr-1" />
-        {saving ? 'Saving...' : 'Save'}
-      </button>
-    {/if}
+    <button
+      class="bg-blue-500 text-white font-bold px-3 py-1.5 rounded shadow text-sm flex items-center gap-1 disabled:opacity-50"
+      onclick={generateStandard} disabled={loading || !salt}
+    >
+      <AIcon path={mdiRefresh} size="18" />Generate Standard
+    </button>
+    <button
+      class="bg-green-500 text-white font-bold px-3 py-1.5 rounded shadow text-sm flex items-center gap-1 disabled:opacity-50"
+      onclick={() => { addForm = { date: '', startTime: '19:00', endTime: '21:30' }; showAddModal = true }}
+      disabled={!salt}
+    >
+      <AIcon path={mdiPlus} size="18" />Add Custom
+    </button>
   </div>
 
-  <!-- Table -->
+  <!-- Session list -->
   {#if loading}
-    <div class="text-gray-500 mt-8 text-center">Loading...</div>
-  {:else if loaded}
-    <div class="overflow-x-auto rounded shadow">
-      <table class="border-collapse bg-white text-sm w-max">
-        <thead>
-          <tr>
-            <th class="sticky left-0 z-10 bg-gray-200 px-4 py-2 text-left font-bold border-r border-gray-300 min-w-52">
-              Name
-            </th>
-            {#each trainingDates as date}
-              {@const h = formatHeader(date)}
-              <th class="bg-gray-200 px-2 py-1 text-center font-semibold border-r border-gray-300 min-w-14">
-                <div class="text-xs text-gray-500 font-normal">{h.day}</div>
-                <div>{h.date}</div>
-              </th>
-            {/each}
-          </tr>
-        </thead>
-        <tbody>
-          {#each rows as row}
-            <tr class="border-t border-gray-100 hover:bg-gray-50">
-
-              <!-- Name cell -->
-              <td class="sticky left-0 z-10 bg-white px-3 py-1.5 border-r border-gray-200 hover:bg-gray-50">
-                {#if row.locked}
-                  <div class="flex items-center gap-2">
-                    <span class="font-medium">{row.name}</span>
-                    {#if row.userId}
-                      <span class="text-xs text-green-700 bg-green-100 px-1.5 rounded-full">linked</span>
-                    {:else}
-                      <span class="text-xs text-gray-400 bg-gray-100 px-1.5 rounded-full">unlinked</span>
-                    {/if}
-                  </div>
-                {:else}
-                  <input
-                    class="border rounded px-2 py-0.5 w-full text-sm"
-                    placeholder="Enter name..."
-                    bind:value={row.name}
-                    oninput={() => onNameInput(row)}
-                  />
-                {/if}
-              </td>
-
-              <!-- Attendance cells -->
-              {#each trainingDates as date}
-                <td
-                  class="text-center border-r border-gray-100 cursor-pointer select-none transition-colors"
-                  class:bg-green-400={row.data[date]}
-                  class:text-white={row.data[date]}
-                  class:hover:bg-green-300={row.data[date]}
-                  class:hover:bg-green-50={!row.data[date]}
-                  onclick={() => toggle(row, date)}
-                >
-                  <div class="py-2 px-2 font-bold">
-                    {row.data[date] ? '✓' : ''}
-                  </div>
-                </td>
-              {/each}
-            </tr>
-          {/each}
-
-          {#if rows.length === 0}
-            <tr>
-              <td
-                colspan={trainingDates.length + 1}
-                class="text-center py-8 text-gray-400"
-              >
-                No data yet. Add a row or import a CSV.
-              </td>
-            </tr>
-          {/if}
-        </tbody>
-      </table>
+    <div class="text-gray-400 text-center mt-8">Loading...</div>
+  {:else if sessions.length === 0}
+    <div class="text-gray-400 text-center mt-8">
+      No sessions for {MONTH_NAMES[selectedMonth]} {selectedYear}.<br/>
+      Click "Generate Standard" to create Mon/Wed/Fri sessions.
     </div>
-
-    <!-- Legend -->
-    <div class="flex items-center gap-4 mt-3 text-xs text-gray-500">
-      <div class="flex items-center gap-1">
-        <div class="w-4 h-4 rounded bg-green-400"></div>
-        Present
-      </div>
-      <div class="flex items-center gap-1">
-        <div class="w-4 h-4 rounded border border-gray-300"></div>
-        Absent
-      </div>
-      <div class="flex items-center gap-1">
-        <span class="text-green-700 bg-green-100 px-1.5 rounded-full">linked</span>
-        Name matched to an app user
-      </div>
+  {:else}
+    <div class="flex flex-col gap-2">
+      {#each sessions as session}
+        <div class="bg-white rounded shadow px-4 py-3 flex items-center gap-4">
+          <div class="grow min-w-0">
+            <div class="font-bold">{fmtDate(session.start)}</div>
+            <div class="text-sm text-gray-500">{fmtTime(session.start)} – {fmtTime(session.end)}</div>
+            <div class="font-mono text-xs text-gray-400 mt-0.5">passcode: {session.passcode}</div>
+          </div>
+          <button class="text-indigo-500 p-1 shrink-0" onclick={() => downloadQR(session)} title="Download QR">
+            <AIcon path={mdiQrcode} />
+          </button>
+          <button class="text-red-400 p-1 shrink-0" onclick={() => deleteSession(session)}>
+            <AIcon path={mdiDelete} />
+          </button>
+        </div>
+      {/each}
     </div>
   {/if}
 </div>
+
+<!-- Add Custom Modal -->
+{#if showAddModal}
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded shadow-lg w-full max-w-sm">
+      <div class="p-4 font-bold text-xl border-b">Add Custom Session</div>
+      <div class="p-4 flex flex-col gap-4">
+        <label class="flex flex-col">
+          <span class="font-bold text-sm mb-1">Date</span>
+          <input type="date" class="border rounded px-2 py-1.5" bind:value={addForm.date} />
+        </label>
+        <div class="flex gap-3">
+          <label class="flex flex-col grow">
+            <span class="font-bold text-sm mb-1">Start</span>
+            <input type="time" class="border rounded px-2 py-1.5" bind:value={addForm.startTime} />
+          </label>
+          <label class="flex flex-col grow">
+            <span class="font-bold text-sm mb-1">End</span>
+            <input type="time" class="border rounded px-2 py-1.5" bind:value={addForm.endTime} />
+          </label>
+        </div>
+      </div>
+      <div class="p-4 border-t flex justify-end gap-2">
+        <button class="px-4 py-1.5 rounded border font-bold" onclick={() => showAddModal = false}>Cancel</button>
+        <button
+          class="px-4 py-1.5 rounded bg-blue-500 text-white font-bold disabled:opacity-50"
+          onclick={saveCustomSession} disabled={savingSession || !addForm.date}
+        >{savingSession ? 'Saving...' : 'Save'}</button>
+      </div>
+    </div>
+  </div>
+{/if}
