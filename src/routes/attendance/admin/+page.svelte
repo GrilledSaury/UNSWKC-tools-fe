@@ -8,7 +8,7 @@
   import { AIcon } from 'ace.svelte'
   import {
     mdiHome, mdiPlus, mdiDelete, mdiQrcode,
-    mdiEye, mdiEyeOff, mdiChevronLeft, mdiChevronRight, mdiRefresh,
+    mdiEye, mdiEyeOff, mdiChevronLeft, mdiChevronRight, mdiRefresh, mdiPrinter,
   } from '@mdi/js'
   import { goto } from '$app/navigation'
   import { userProfile } from '$lib/stores'
@@ -200,12 +200,56 @@
   // ── QR ─────────────────────────────────────────────────────────────────────
 
   async function downloadQR(session) {
-    const url    = `${window.location.origin}/attend?s=${session.id}&p=${session.passcode}`
+    const url     = `${window.location.origin}/attend?s=${session.id}&p=${session.passcode}`
     const dataUrl = await QRCode.toDataURL(url, { width: 512, margin: 2 })
     const a = document.createElement('a')
     a.href     = dataUrl
     a.download = `QR-${session.id}.png`
     a.click()
+  }
+
+  async function printBook() {
+    const pages = await Promise.all(sessions.map(async session => {
+      const url     = `${window.location.origin}/attend?s=${session.id}&p=${session.passcode}`
+      const dataUrl = await QRCode.toDataURL(url, { width: 800, margin: 2 })
+      const label   = fmtDate(session.start)
+      const time    = `${fmtTime(session.start)} – ${fmtTime(session.end)}`
+      return `
+        <div class="page">
+          <div class="label">${label}</div>
+          <div class="time">${time}</div>
+          <img src="${dataUrl}" />
+          <div class="hint">Scan to mark attendance</div>
+        </div>`
+    }))
+
+    const win = window.open('', '_blank')
+    win.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Attendance QR — ${MONTH_NAMES[selectedMonth]} ${selectedYear}</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: sans-serif; }
+          .page {
+            width: 100vw; height: 100vh;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            page-break-after: always;
+          }
+          .label { font-size: 2rem; font-weight: bold; margin-bottom: 0.5rem; }
+          .time  { font-size: 1.2rem; color: #555; margin-bottom: 2rem; }
+          img    { width: min(80vw, 80vh); height: min(80vw, 80vh); }
+          .hint  { font-size: 1rem; color: #888; margin-top: 1.5rem; }
+          @media print { .page { page-break-after: always; } }
+        </style>
+      </head>
+      <body>${pages.join('')}</body>
+      </html>`)
+    win.document.close()
+    win.focus()
+    win.print()
   }
 
   // ── Month nav ──────────────────────────────────────────────────────────────
@@ -293,6 +337,14 @@
     >
       <AIcon path={mdiPlus} size="18" />Add Custom
     </button>
+    {#if sessions.length > 0}
+      <button
+        class="bg-gray-700 text-white font-bold px-3 py-1.5 rounded shadow text-sm flex items-center gap-1"
+        onclick={printBook}
+      >
+        <AIcon path={mdiPrinter} size="18" />Print Book
+      </button>
+    {/if}
   </div>
 
   <!-- Session list -->
