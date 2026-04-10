@@ -199,12 +199,18 @@
 
   // ── QR ─────────────────────────────────────────────────────────────────────
 
-  async function downloadQR(session) {
-    const url     = `${window.location.origin}/attend?s=${session.id}&p=${session.passcode}`
+  let qrModal    = $state(null)  // { session, dataUrl } | null
+
+  async function openQR(session) {
+    const url    = `${window.location.origin}/attend?s=${session.id}&p=${session.passcode}`
     const dataUrl = await QRCode.toDataURL(url, { width: 512, margin: 2 })
+    qrModal = { session, dataUrl }
+  }
+
+  function downloadQR() {
     const a = document.createElement('a')
-    a.href     = dataUrl
-    a.download = `QR-${session.id}.png`
+    a.href     = qrModal.dataUrl
+    a.download = `QR-${qrModal.session.id}.png`
     a.click()
   }
 
@@ -364,7 +370,7 @@
             <div class="text-sm text-gray-500">{fmtTime(session.start)} – {fmtTime(session.end)}</div>
             <div class="font-mono text-xs text-gray-400 mt-0.5">passcode: {session.passcode}</div>
           </div>
-          <button class="text-indigo-500 p-1 shrink-0" onclick={() => downloadQR(session)} title="Download QR">
+          <button class="text-indigo-500 p-1 shrink-0" onclick={() => openQR(session)} title="QR Code">
             <AIcon path={mdiQrcode} />
           </button>
           <button class="text-red-400 p-1 shrink-0" onclick={() => deleteSession(session)}>
@@ -375,6 +381,23 @@
     </div>
   {/if}
 </div>
+
+<!-- QR Modal -->
+{#if qrModal}
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded shadow-lg w-full max-w-sm flex flex-col items-center">
+      <div class="p-4 font-bold text-xl border-b w-full">{fmtDate(qrModal.session.start)}</div>
+      <div class="text-sm text-gray-500 mt-3">{fmtTime(qrModal.session.start)} – {fmtTime(qrModal.session.end)}</div>
+      <img src={qrModal.dataUrl} alt="QR Code" class="w-64 h-64 my-4" />
+      <div class="p-4 border-t w-full flex justify-end gap-2">
+        <button class="px-4 py-1.5 rounded border font-bold" onclick={() => qrModal = null}>Close</button>
+        <button class="px-4 py-1.5 rounded bg-indigo-500 text-white font-bold flex items-center gap-1" onclick={downloadQR}>
+          <AIcon path={mdiQrcode} size="18" />Download
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
 
 <!-- Add Custom Modal -->
 {#if showAddModal}
