@@ -1,5 +1,5 @@
 <script>
-  import { mdiAccount, mdiLogout, mdiSchool, mdiAccountGroup, mdiCalendarCheck, mdiNotebookOutline } from '@mdi/js'
+  import { mdiAccount, mdiLogout, mdiSchool, mdiAccountGroup, mdiCalendarCheck, mdiNotebookOutline, mdiCalendarMonth } from '@mdi/js'
   import { AIcon } from 'ace.svelte'
   import { goto } from '$app/navigation'
   import { userProfile } from '$lib/stores'
@@ -8,6 +8,7 @@
   const baseApps = [
     { label: 'My Profile', icon: mdiAccount, color: 'text-blue-500', href: () => '/profile/?uid=' + $userProfile.uid },
     { label: 'Beginner Course', icon: mdiSchool, color: 'text-yellow-500', href: () => '/beginner' },
+    { label: 'My Attendance', icon: mdiCalendarMonth, color: 'text-green-500', href: () => '/attendance' },
   ]
 
   // Apps shown only when user has the matching permission

@@ -96,15 +96,29 @@ Editable content for the beginner course page. Managed via the admin modal.
 }
 ```
 
-### `attendance/{name}`
-Keyed by the member's display name (not uid) so records can exist for people who haven't signed up to the app.
+### `attendance/{userId}/sessions/{sessionId}`
+One document per check-in. `sessionId` is `YYYY-MM-DD-DayAbbr` (e.g. `2026-04-06-Mon`).
 ```
 {
-  userId: string | null,   // matched uid if the name resolves to an app user
-  data: {
-    'YYYY/MM/DD': 0 | 1,   // training dates (Mon/Wed/Fri only)
-    ...
-  }
+  t: timestamp,   // server-side check-in time
+  p: string       // passcode echoed from the QR code (retained for audit)
+}
+```
+
+### `session/{sessionId}`
+One document per training session, keyed `YYYY-MM-DD-DayAbbr`. Created by the attendance admin.
+```
+{
+  start:    timestamp,   // session open time
+  end:      timestamp,   // session close time
+  passcode: string       // 8-char hex derived from SHA-256(salt + sessionId)
+}
+```
+
+### `config/attendance`
+```
+{
+  salt: string   // secret used to generate session passcodes; set once by admin
 }
 ```
 
@@ -137,7 +151,8 @@ One document per borrowing record (auto-ID).
 /beginner                 Beginner course enrolment for members
 /beginner/admin           Manage enrolments, edit course content  [permission: beginner]
 /beginner/admin/scan      QR code scanner for session entry  [permission: beginner]
-/attendance/admin         Monthly attendance grid, CSV import/export  [permission: attendance]
+/attendance/admin         Session management, QR generation  [permission: attendance]
+/attend?s=<id>&p=<code>   QR scan landing page — members mark their own attendance
 /bogu/admin               Bogu borrowing log  [permission: bogu]
 ```
 
@@ -158,13 +173,20 @@ Members confirm interest, upload a payment receipt, and (once activated) display
 ### Users' Admin (`/profile/admin`)
 Lists all registered users and links to their profile pages.
 
-### Attendance (`/attendance/admin`)
-- Month picker generates a grid of all Mon/Wed/Fri training dates
-- Click cells to toggle present/absent
-- Import CSV (`name, 1, 0, 1, ...`). Values are positionally mapped to the month's dates; rows are merged by name
-- Download a prefilled template CSV for offline entry
-- Saves merge into each `attendance/{name}` doc, preserving other months' data
-- Names are matched case-insensitively to app users; unmatched names are stored without a `userId`
+### Attendance admin (`/attendance/admin`)
+- Set a secret salt (`config/attendance`). All QR passcodes are derived from it via `SHA-256(salt + sessionId).slice(0, 8)`. Regenerating the salt invalidates all existing QR codes.
+- Month picker loads sessions from Firestore
+- "Generate Standard" creates all Mon/Wed/Fri sessions for the month (idempotent). Default windows: Mon/Wed 19:00–21:30, Fri 19:30–21:30
+- "Add Custom" — any date and time window
+- Each session card shows its passcode and a QR download button (512px PNG)
+- Sessions can be deleted individually
+
+### Attendance scan (`/attend`)
+- Target of the printed QR code. URL encodes session ID and passcode: `/attend?s=2026-04-07-Mon&p=a3f9b2`
+- Member opens the link on their phone, sees session details and their name, taps "Mark Attendance"
+- Writes to `attendance/{userId}/sessions/{sessionId}` with a server timestamp
+- Firestore rule enforces: correct passcode + current server time within the session window. Requests outside the window or with a wrong passcode are rejected
+- Duplicate scans are detected client-side (doc already exists → "Already marked")
 
 ### Bogu Log (`/bogu/admin`)
 - Tracks who is borrowing club equipment (Men, Kote, Do, Tare, Shinai Bag, Bogu Bag)
@@ -181,8 +203,15 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
   
-  	function hasPermission(perm) {
+    function hasPermission(perm) {
       return get(/databases/$(database)/documents/user/$(request.auth.uid)).data.permissions.hasAny([perm]);
+    }
+
+    function validAttendance(sessionId, token) {
+      let s = get(/databases/$(database)/documents/session/$(sessionId));
+      return s.data.start <= request.time
+          && s.data.end   >= request.time
+          && s.data.passcode == token;
     }
     
     match /user/{userId} {
@@ -215,11 +244,19 @@ service cloud.firestore {
       allow write: if hasPermission(document); // 'beginner' doc → needs beginner permission
     }
     
-    match /attendance/{name} {
+    match /attendance/{userId}/sessions/{sessionId} {
+      allow read: if request.auth.uid == userId
+               || hasPermission('attendance')
+               || hasPermission('bogu');
+      allow create: if request.auth.uid == userId
+                 && validAttendance(sessionId, request.resource.data.p);
+    }
+
+    match /session/{sessionId} {
       allow read: if request.auth != null;
       allow write: if hasPermission('attendance');
     }
-    
+
     match /bogu/{id} {
       allow read: if request.auth != null;
       allow write: if hasPermission('bogu');
