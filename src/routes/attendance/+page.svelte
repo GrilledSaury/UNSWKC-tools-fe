@@ -39,7 +39,7 @@
     const now = new Date()
     sessions = sessionsSnap.docs
       .map(d => ({ id: d.id, start: d.data().start.toDate(), end: d.data().end.toDate() }))
-      .filter(s => s.end < now)
+      .filter(s => s.start < now)
 
     attendedSnap.forEach(d => {
       attended[d.id] = { t: d.data().t?.toDate() ?? null }
