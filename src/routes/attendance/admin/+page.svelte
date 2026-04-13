@@ -9,6 +9,7 @@
   import {
     mdiHome, mdiPlus, mdiDelete, mdiQrcode,
     mdiEye, mdiEyeOff, mdiChevronLeft, mdiChevronRight, mdiRefresh, mdiPrinter,
+    mdiAccountMultiple, mdiCheck,
   } from '@mdi/js'
   import { goto } from '$app/navigation'
   import { userProfile } from '$lib/stores'
@@ -258,6 +259,48 @@
     win.print()
   }
 
+  // ── Session attendance view ────────────────────────────────────────────────
+
+  let viewModal    = $state(null)  // { session, rows: [{ uid, name, checkedIn, time }] }
+  let viewLoading  = $state(false)
+
+  async function openView(session) {
+    viewLoading = true
+    viewModal   = { session, rows: [] }
+    try {
+        const usersSnap = await getDocs(collection(db, 'user'))
+
+      // For each user, fetch their specific session doc directly
+      const checkins = {}
+      await Promise.all(usersSnap.docs.map(async u => {
+        const sessionDoc = await getDoc(doc(db, 'attendance', u.id, 'sessions', session.id))
+        if (sessionDoc.exists()) checkins[u.id] = sessionDoc.data().t?.toDate() ?? null
+      }))
+
+      const rows = []
+      usersSnap.forEach(u => {
+        rows.push({
+          uid:       u.id,
+          name:      u.data().name,
+          checkedIn: u.id in checkins,
+          time:      checkins[u.id] ?? null,
+        })
+      })
+
+      rows.sort((a, b) => {
+        if (a.checkedIn !== b.checkedIn) return a.checkedIn ? -1 : 1
+        if (a.time && b.time) return a.time - b.time
+        return a.name.localeCompare(b.name)
+      })
+
+      viewModal = { session, rows }
+    } catch (err) {
+      Swal.fire('Error', err.message, 'error')
+      viewModal = null
+    }
+    viewLoading = false
+  }
+
   // ── Month nav ──────────────────────────────────────────────────────────────
 
   async function prevMonth() {
@@ -370,6 +413,9 @@
             <div class="text-sm text-gray-500">{fmtTime(session.start)} – {fmtTime(session.end)}</div>
             <div class="font-mono text-xs text-gray-400 mt-0.5">passcode: {session.passcode}</div>
           </div>
+          <button class="text-green-600 p-1 shrink-0" onclick={() => openView(session)} title="View attendance">
+            <AIcon path={mdiAccountMultiple} />
+          </button>
           <button class="text-indigo-500 p-1 shrink-0" onclick={() => openQR(session)} title="QR Code">
             <AIcon path={mdiQrcode} />
           </button>
@@ -381,6 +427,50 @@
     </div>
   {/if}
 </div>
+
+<!-- Session Attendance Modal -->
+{#if viewModal}
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded shadow-lg w-full max-w-md flex flex-col" style="max-height:90vh">
+      <div class="p-4 border-b">
+        <div class="font-bold text-xl">{fmtDate(viewModal.session.start)}</div>
+        <div class="text-sm text-gray-500">{fmtTime(viewModal.session.start)} – {fmtTime(viewModal.session.end)}</div>
+      </div>
+
+      {#if viewLoading}
+        <div class="p-8 text-center text-gray-400">Loading...</div>
+      {:else}
+        {@const attended = viewModal.rows.filter(r => r.checkedIn).length}
+        <div class="px-4 py-2 text-sm text-gray-500 border-b">
+          {attended} / {viewModal.rows.length} checked in
+        </div>
+        <div class="overflow-y-auto grow">
+          {#each viewModal.rows as row}
+            <div class="flex items-center px-4 py-2.5 border-b border-gray-50 last:border-0">
+              <div
+                class="w-6 h-6 rounded-full flex items-center justify-center mr-3 shrink-0"
+                class:bg-green-100={row.checkedIn}
+                class:bg-gray-100={!row.checkedIn}
+              >
+                {#if row.checkedIn}
+                  <AIcon path={mdiCheck} size="16" class="text-green-500" />
+                {/if}
+              </div>
+              <div class="grow font-medium text-sm">{row.name}</div>
+              {#if row.time}
+                <div class="text-xs text-gray-400 shrink-0">{fmtTime(row.time)}</div>
+              {/if}
+            </div>
+          {/each}
+        </div>
+      {/if}
+
+      <div class="p-4 border-t flex justify-end">
+        <button class="px-4 py-1.5 rounded border font-bold" onclick={() => viewModal = null}>Close</button>
+      </div>
+    </div>
+  </div>
+{/if}
 
 <!-- QR Modal -->
 {#if qrModal}
