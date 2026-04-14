@@ -3,7 +3,7 @@
   import { db } from '$lib/firebase'
   import {
     collection, doc, getDoc, getDocs, setDoc, deleteDoc,
-    query, where, orderBy, Timestamp, documentId,
+    query, where, orderBy, Timestamp, documentId, serverTimestamp,
   } from 'firebase/firestore'
   import { AIcon } from 'ace.svelte'
   import {
@@ -263,6 +263,9 @@
 
   let viewModal    = $state(null)  // { session, rows: [{ uid, name, checkedIn, time }] }
   let viewLoading  = $state(false)
+  let markModal    = $state(null)  // { row, session } — confirmation + time picker
+  let markTime     = $state('')
+  let marking      = $state(false)
 
   async function openView(session) {
     viewLoading = true
@@ -299,6 +302,40 @@
       viewModal = null
     }
     viewLoading = false
+  }
+
+  function openMark(row) {
+    const s = viewModal.session.start
+    markTime  = `${String(s.getHours()).padStart(2,'0')}:${String(s.getMinutes()).padStart(2,'0')}`
+    markModal = { row, session: viewModal.session }
+  }
+
+  async function confirmMark() {
+    if (marking || !markTime) return
+    marking = true
+    try {
+      const [h, m]  = markTime.split(':').map(Number)
+      const date    = new Date(markModal.session.start)
+      date.setHours(h, m, 0, 0)
+      const ts = Timestamp.fromDate(date)
+      await setDoc(
+        doc(db, 'attendance', markModal.row.uid, 'sessions', markModal.session.id),
+        { t: ts, p: 'manual' },
+      )
+      // Update row in place so the list re-renders
+      markModal.row.checkedIn = true
+      markModal.row.time = date
+      // Re-sort
+      viewModal.rows.sort((a, b) => {
+        if (a.checkedIn !== b.checkedIn) return a.checkedIn ? -1 : 1
+        if (a.time && b.time) return a.time - b.time
+        return a.name.localeCompare(b.name)
+      })
+      markModal = null
+    } catch (err) {
+      Swal.fire('Error', err.message, 'error')
+    }
+    marking = false
   }
 
   // ── Month nav ──────────────────────────────────────────────────────────────
@@ -447,18 +484,24 @@
         <div class="overflow-y-auto grow">
           {#each viewModal.rows as row}
             <div class="flex items-center px-4 py-2.5 border-b border-gray-50 last:border-0">
-              <div
-                class="w-6 h-6 rounded-full flex items-center justify-center mr-3 shrink-0"
+              <button
+                class="w-6 h-6 rounded-full flex items-center justify-center mr-3 shrink-0 transition-colors"
                 class:bg-green-100={row.checkedIn}
                 class:bg-gray-100={!row.checkedIn}
+                class:cursor-default={row.checkedIn}
+                class:hover:bg-gray-200={!row.checkedIn}
+                onclick={() => !row.checkedIn && openMark(row)}
+                title={row.checkedIn ? '' : 'Mark as attended'}
               >
                 {#if row.checkedIn}
                   <AIcon path={mdiCheck} size="16" class="text-green-500" />
                 {/if}
-              </div>
+              </button>
               <div class="grow font-medium text-sm">{row.name}</div>
               {#if row.time}
                 <div class="text-xs text-gray-400 shrink-0">{fmtTime(row.time)}</div>
+              {:else}
+                <div class="text-xs text-gray-300 shrink-0">absent</div>
               {/if}
             </div>
           {/each}
@@ -467,6 +510,38 @@
 
       <div class="p-4 border-t flex justify-end">
         <button class="px-4 py-1.5 rounded border font-bold" onclick={() => viewModal = null}>Close</button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+<!-- Manual Mark Modal -->
+{#if markModal}
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+    <div class="bg-white rounded shadow-lg w-full max-w-sm">
+      <div class="p-4 border-b font-bold text-xl">Mark Attendance</div>
+      <div class="p-4 flex flex-col gap-3">
+        <div class="text-sm text-gray-600">
+          Manually marking <span class="font-bold text-gray-800">{markModal.row.name}</span> as attended for
+          <span class="font-bold text-gray-800">{fmtDate(markModal.session.start)}</span>.
+        </div>
+        <div class="bg-yellow-50 border border-yellow-200 rounded px-3 py-2 text-xs text-yellow-700">
+          This cannot be undone. Only mark if you are sure this person attended.
+        </div>
+        <label class="flex flex-col">
+          <span class="font-bold text-sm mb-1">Check-in time</span>
+          <input type="time" class="border rounded px-2 py-1.5" bind:value={markTime} />
+        </label>
+      </div>
+      <div class="p-4 border-t flex justify-end gap-2">
+        <button class="px-4 py-1.5 rounded border font-bold" onclick={() => markModal = null}>Cancel</button>
+        <button
+          class="px-4 py-1.5 rounded bg-green-500 text-white font-bold disabled:opacity-50 flex items-center gap-1"
+          onclick={confirmMark}
+          disabled={marking || !markTime}
+        >
+          <AIcon path={mdiCheck} size="18" />{marking ? 'Saving...' : 'Confirm'}
+        </button>
       </div>
     </div>
   </div>
