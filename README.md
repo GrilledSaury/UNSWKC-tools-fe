@@ -178,8 +178,9 @@ Lists all registered users and links to their profile pages.
 - Month picker loads sessions from Firestore
 - "Generate Standard" creates all Mon/Wed/Fri sessions for the month (idempotent). Default windows: Mon/Wed 19:00–21:30, Fri 19:30–21:30
 - "Add Custom" — any date and time window
-- Each session card shows its passcode and a QR download button (512px PNG)
+- Each session card shows its passcode, a QR modal (with download), and a people icon to view attendance
 - Sessions can be deleted individually
+- Attendance view: lists all users sorted by check-in time; absent members shown below. Admins can manually mark a member as attended — opens a confirmation with a time picker. Manual entries are stored with `p: 'manual'` to distinguish them from QR scans. Attendance can only be added, not removed.
 
 ### Attendance scan (`/attend`)
 - Target of the printed QR code. URL encodes session ID and passcode: `/attend?s=2026-04-07-Mon&p=a3f9b2`
@@ -248,8 +249,8 @@ service cloud.firestore {
       allow read: if request.auth.uid == userId
                || hasPermission('attendance')
                || hasPermission('bogu');
-      allow create: if request.auth.uid == userId
-                 && validAttendance(sessionId, request.resource.data.p);
+      allow create: if (request.auth.uid == userId && validAttendance(sessionId, request.resource.data.p))
+                 || hasPermission('attendance');
     }
 
     match /session/{sessionId} {
