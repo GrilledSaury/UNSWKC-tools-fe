@@ -248,9 +248,14 @@ service cloud.firestore {
                     || hasPermission('beginner');
     }
     
-    match /config/{document} {
+    match /config/beginner {
       allow read: if request.auth != null;
-      allow write: if hasPermission(document); // 'beginner' doc → needs beginner permission
+      allow write: if hasPermission('beginner');
+    }
+
+    match /config/attendance {
+      allow read: if hasPermission('attendance');
+      allow write: if hasPermission('attendance');
     }
     
     match /attendance/{userId}/sessions/{sessionId} {
