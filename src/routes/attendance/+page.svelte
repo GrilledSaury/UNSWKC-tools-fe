@@ -131,7 +131,6 @@
   let labels = $derived(monthLabels(weeks, selectedYear))
 
   let totalAttended = $derived(Object.values(sessionMap).filter(s => s.attended).length)
-  let totalSessions = $derived(Object.keys(sessionMap).length)
 
   // Sessions sorted newest-first, only past ones
   let sessionList = $derived(
@@ -172,9 +171,9 @@
       >
         <AIcon path={mdiChevronRight} size="24" />
       </button>
-      {#if !loadingYear && totalSessions > 0}
+      {#if !loadingYear }
         <span class="text-sm text-gray-500 ml-2">
-          {totalAttended} / {totalSessions} sessions attended
+          {totalAttended} sessions attended
         </span>
       {:else if loadingYear}
         <span class="text-sm text-gray-400 ml-2">Loading…</span>
