@@ -105,11 +105,14 @@
         orderBy(documentId()),
       )
       const snap = await getDocs(q)
-      sessions = snap.docs.map(d => ({
+      const secretSnaps = await Promise.all(
+        snap.docs.map(d => getDoc(doc(db, 'sessionSecret', d.id)))
+      )
+      sessions = snap.docs.map((d, i) => ({
         id:       d.id,
         start:    d.data().start.toDate(),
         end:      d.data().end.toDate(),
-        passcode: d.data().passcode,
+        passcode: secretSnaps[i].exists() ? secretSnaps[i].data().passcode : '',
       }))
     } catch (err) {
       Swal.fire('Error', err.message, 'error')
@@ -146,10 +149,10 @@
       for (const s of toCreate) {
         const passcode = await generatePasscode(salt, s.id)
         await setDoc(doc(db, 'session', s.id), {
-          start:    Timestamp.fromDate(new Date(`${s.date}T${s.start}:00`)),
-          end:      Timestamp.fromDate(new Date(`${s.date}T${s.end}:00`)),
-          passcode,
+          start: Timestamp.fromDate(new Date(`${s.date}T${s.start}:00`)),
+          end:   Timestamp.fromDate(new Date(`${s.date}T${s.end}:00`)),
         })
+        await setDoc(doc(db, 'sessionSecret', s.id), { passcode })
       }
       Swal.fire('Generated!', `${toCreate.length} sessions created`, 'success')
       await loadSessions()
@@ -169,10 +172,10 @@
       const id       = `${addForm.date}-${dayAbbr}`
       const passcode = await generatePasscode(salt, id)
       await setDoc(doc(db, 'session', id), {
-        start:    Timestamp.fromDate(new Date(`${addForm.date}T${addForm.startTime}:00`)),
-        end:      Timestamp.fromDate(new Date(`${addForm.date}T${addForm.endTime}:00`)),
-        passcode,
+        start: Timestamp.fromDate(new Date(`${addForm.date}T${addForm.startTime}:00`)),
+        end:   Timestamp.fromDate(new Date(`${addForm.date}T${addForm.endTime}:00`)),
       })
+      await setDoc(doc(db, 'sessionSecret', id), { passcode })
       showAddModal = false
       await loadSessions()
     } catch (err) {
@@ -191,7 +194,10 @@
     })
     if (!isConfirmed) return
     try {
-      await deleteDoc(doc(db, 'session', session.id))
+      await Promise.all([
+        deleteDoc(doc(db, 'session', session.id)),
+        deleteDoc(doc(db, 'sessionSecret', session.id)),
+      ])
       sessions = sessions.filter(s => s.id !== session.id)
     } catch (err) {
       Swal.fire('Error', err.message, 'error')

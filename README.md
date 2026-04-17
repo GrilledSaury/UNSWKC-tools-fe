@@ -106,12 +106,19 @@ One document per check-in. `sessionId` is `YYYY-MM-DD-DayAbbr` (e.g. `2026-04-06
 ```
 
 ### `session/{sessionId}`
-One document per training session, keyed `YYYY-MM-DD-DayAbbr`. Created by the attendance admin.
+One document per training session, keyed `YYYY-MM-DD-DayAbbr`. Created by the attendance admin. Readable by all authenticated users.
 ```
 {
-  start:    timestamp,   // session open time
-  end:      timestamp,   // session close time
-  passcode: string       // 8-char hex derived from SHA-256(salt + sessionId)
+  start: timestamp,   // session open time
+  end:   timestamp,   // session close time
+}
+```
+
+### `sessionSecret/{sessionId}`
+Passcode for each session. Same key as `session`. Readable only by users with `attendance` permission.
+```
+{
+  passcode: string   // 8-char hex derived from SHA-256(salt + sessionId)
 }
 ```
 
@@ -209,10 +216,11 @@ service cloud.firestore {
     }
 
     function validAttendance(sessionId, token) {
-      let s = get(/databases/$(database)/documents/session/$(sessionId));
+      let s   = get(/databases/$(database)/documents/session/$(sessionId));
+      let sec = get(/databases/$(database)/documents/sessionSecret/$(sessionId));
       return s.data.start <= request.time
           && s.data.end   >= request.time
-          && s.data.passcode == token;
+          && sec.data.passcode == token;
     }
     
     match /user/{userId} {
@@ -255,6 +263,11 @@ service cloud.firestore {
 
     match /session/{sessionId} {
       allow read: if request.auth != null;
+      allow write: if hasPermission('attendance');
+    }
+
+    match /sessionSecret/{sessionId} {
+      allow read: if hasPermission('attendance');
       allow write: if hasPermission('attendance');
     }
 
