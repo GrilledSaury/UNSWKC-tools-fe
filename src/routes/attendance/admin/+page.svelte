@@ -21,9 +21,9 @@
 
   // Default start/end for standard training days (Mon=1, Wed=3, Fri=5)
   const TRAINING_DEFAULTS = {
-    1: { start: '19:00', end: '21:30' },
-    3: { start: '19:00', end: '21:30' },
-    5: { start: '19:30', end: '21:30' },
+    1: { start: '19:00', end: '22:00' },
+    3: { start: '19:00', end: '22:00' },
+    5: { start: '19:30', end: '22:00' },
   }
 
   const now = new Date()

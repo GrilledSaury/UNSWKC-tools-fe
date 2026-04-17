@@ -176,7 +176,7 @@ Lists all registered users and links to their profile pages.
 ### Attendance admin (`/attendance/admin`)
 - Set a secret salt (`config/attendance`). All QR passcodes are derived from it via `SHA-256(salt + sessionId).slice(0, 8)`. Regenerating the salt invalidates all existing QR codes.
 - Month picker loads sessions from Firestore
-- "Generate Standard" creates all Mon/Wed/Fri sessions for the month (idempotent). Default windows: Mon/Wed 19:00–21:30, Fri 19:30–21:30
+- "Generate Standard" creates all Mon/Wed/Fri sessions for the month (idempotent). Default windows: Mon/Wed 19:00–22:00, Fri 19:30–22:00
 - "Add Custom" — any date and time window
 - Each session card shows its passcode, a QR modal (with download), and a people icon to view attendance
 - Sessions can be deleted individually
