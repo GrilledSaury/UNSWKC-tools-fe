@@ -15,14 +15,15 @@
   const PIECES = ['Men', 'Kote', 'Do', 'Tare', 'Shinai Bag', 'Bogu Bag']
   const emptyItem = () => ({ men: false, kote: false, do: false, tare: false, 'shinai bag': false, 'bogu bag': false })
 
-  let entries       = $state([])   // { id, name, item: {men,kote,do,tare}, note, score }
-  let attendanceMap = {}           // name → attendance data, kept for score lookups
+  let entries       = $state([])   // { id, name, userId, item, note, score }
+  let users         = $state([])   // { uid, name } sorted by name
+  let attendanceMap = {}           // userId → { sessionId → data }
   let loading  = $state(true)
 
   // modal
   let showModal  = $state(false)
   let modalMode  = $state('add')  // 'add' | 'edit'
-  let editEntry  = $state({ id: null, name: '', item: emptyItem(), note: '' })
+  let editEntry  = $state({ id: null, userId: '', item: emptyItem(), note: '' })
   let saving     = $state(false)
 
   function anyItemChecked() {
@@ -88,7 +89,14 @@
   async function load() {
     loading = true
     try {
-      const boguSnap = await getDocs(collection(db, 'bogu'))
+      const [boguSnap, usersSnap] = await Promise.all([
+        getDocs(collection(db, 'bogu')),
+        getDocs(collection(db, 'user')),
+      ])
+
+      users = usersSnap.docs
+        .map(d => ({ uid: d.id, name: d.data().name }))
+        .sort((a, b) => a.name.localeCompare(b.name))
 
       // Collect unique userIds to fetch attendance subcollections in parallel
       const userIds = [...new Set(
@@ -119,30 +127,38 @@
   // ── Modal ──────────────────────────────────────────────────────────────────
 
   function openAdd() {
-    editEntry = { id: null, name: '', item: emptyItem(), note: '' }
+    editEntry = { id: null, userId: '', item: emptyItem(), note: '' }
     modalMode = 'add'
     showModal = true
   }
 
   function openEdit(entry) {
-    editEntry = { id: entry.id, name: entry.name, item: { ...entry.item }, note: entry.note }
+    editEntry = { id: entry.id, userId: entry.userId ?? '', item: { ...entry.item }, note: entry.note ?? '' }
     modalMode = 'edit'
     showModal = true
   }
 
   async function submitModal() {
-    if (!editEntry.name.trim() || !anyItemChecked()) return
+    if (!editEntry.userId || !anyItemChecked()) return
     if (saving) return
     saving = true
     try {
+      const selectedUser = users.find(u => u.uid === editEntry.userId)
       const payload = {
-        name: editEntry.name.trim(),
-        item: { ...editEntry.item },
-        note: editEntry.note.trim(),
+        name:   selectedUser.name,
+        userId: editEntry.userId,
+        item:   { ...editEntry.item },
+        note:   editEntry.note.trim(),
       }
       if (modalMode === 'add') {
+        // Fetch attendance for this user if not already loaded
+        if (!(editEntry.userId in attendanceMap)) {
+          const attSnap = await getDocs(collection(db, 'attendance', editEntry.userId, 'sessions'))
+          attendanceMap[editEntry.userId] = {}
+          attSnap.forEach(d => { attendanceMap[editEntry.userId][d.id] = d.data() })
+        }
+        const score = attendanceScore(attendanceMap[editEntry.userId])
         const ref = await addDoc(collection(db, 'bogu'), payload)
-        const score = attendanceScore(payload.userId ? (attendanceMap[payload.userId] ?? null) : null)
         entries.push({ id: ref.id, ...payload, score })
       } else {
         await updateDoc(doc(db, 'bogu', editEntry.id), payload)
@@ -276,12 +292,13 @@
       </div>
       <div class="p-4 flex flex-col gap-4">
         <label class="flex flex-col">
-          <span class="font-bold text-sm mb-1">Name <span class="text-red-400">*</span></span>
-          <input
-            class="border rounded px-2 py-1.5"
-            placeholder="Borrower's name"
-            bind:value={editEntry.name}
-          />
+          <span class="font-bold text-sm mb-1">Member <span class="text-red-400">*</span></span>
+          <select class="border rounded px-2 py-1.5 bg-white" bind:value={editEntry.userId}>
+            <option value="">Select a member…</option>
+            {#each users as user}
+              <option value={user.uid}>{user.name}</option>
+            {/each}
+          </select>
         </label>
         <div class="flex flex-col">
           <span class="font-bold text-sm mb-2">Items <span class="text-red-400">*</span></span>
@@ -317,7 +334,7 @@
         <button
           class="px-4 py-1.5 rounded bg-blue-500 text-white font-bold flex items-center gap-1 disabled:opacity-50"
           onclick={submitModal}
-          disabled={saving || !editEntry.name.trim() || !anyItemChecked()}
+          disabled={saving || !editEntry.userId || !anyItemChecked()}
         >
           <AIcon path={mdiCheck} size="18" />
           {saving ? 'Saving...' : 'Save'}
