@@ -140,7 +140,9 @@ One document per borrowing record (auto-ID).
     do: boolean,
     tare: boolean,
     'shinai bag': boolean,
-    'bogu bag': boolean
+    'bogu bag': boolean,
+    gi: boolean,
+    hakama: boolean
   },
   note: string      // optional free-text note
 }

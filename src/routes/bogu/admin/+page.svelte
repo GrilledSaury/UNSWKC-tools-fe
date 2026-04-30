@@ -12,8 +12,8 @@
 
   // ── State ──────────────────────────────────────────────────────────────────
 
-  const PIECES = ['Men', 'Kote', 'Do', 'Tare', 'Shinai Bag', 'Bogu Bag']
-  const emptyItem = () => ({ men: false, kote: false, do: false, tare: false, 'shinai bag': false, 'bogu bag': false })
+  const PIECES = ['Men', 'Kote', 'Do', 'Tare', 'Shinai Bag', 'Bogu Bag', 'Gi', 'Hakama']
+  const emptyItem = () => ({ men: false, kote: false, do: false, tare: false, 'shinai bag': false, 'bogu bag': false, gi: false, hakama: false })
 
   let entries       = $state([])   // { id, name, userId, item, note, score }
   let users         = $state([])   // { uid, name } sorted by name
