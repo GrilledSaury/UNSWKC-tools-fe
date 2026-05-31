@@ -1,5 +1,5 @@
 <script>
-  import { mdiAccount, mdiLogout, mdiSchool, mdiAccountGroup, mdiCalendarCheck, mdiNotebookOutline, mdiCalendarMonth } from '@mdi/js'
+  import { mdiAccount, mdiLogout, mdiSchool, mdiAccountGroup, mdiCalendarCheck, mdiNotebookOutline, mdiCalendarMonth, mdiReceiptTextOutline } from '@mdi/js'
   import { AIcon } from 'ace.svelte'
   import { goto } from '$app/navigation'
   import { userProfile } from '$lib/stores'
@@ -17,6 +17,7 @@
     { permission: 'profile', label: "Users' Admin", icon: mdiAccountGroup, color: 'text-blue-700', href: '/profile/admin' },
     { permission: 'attendance', label: 'Attendance', icon: mdiCalendarCheck, color: 'text-green-600', href: '/attendance/admin' },
     { permission: 'bogu', label: 'Bogu Log', icon: mdiNotebookOutline, color: 'text-red-600', href: '/bogu/admin' },
+    { permission: 'invoice', label: 'Invoice Generator', icon: mdiReceiptTextOutline, color: 'text-purple-600', href: '/invoice/admin' },
   ]
 </script>
 
