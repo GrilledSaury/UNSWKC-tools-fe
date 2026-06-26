@@ -9,7 +9,7 @@
   import {
     mdiHome, mdiPlus, mdiDelete, mdiQrcode,
     mdiEye, mdiEyeOff, mdiChevronLeft, mdiChevronRight, mdiRefresh, mdiPrinter,
-    mdiAccountMultiple, mdiCheck,
+    mdiAccountMultiple, mdiCheck, mdiMonitor,
   } from '@mdi/js'
   import { goto } from '$app/navigation'
   import { userProfile } from '$lib/stores'
@@ -374,10 +374,19 @@
 
 <div class="w-screen min-h-screen bg-gray-100 p-4 md:px-16 md:py-8">
 
-  <button onclick={() => goto('/home')}>
-    <AIcon path={mdiHome} size="36" class="text-gray-500" />
-  </button>
-  <div class="text-2xl font-bold mt-4 mb-6">Attendance Sessions</div>
+  <div class="flex items-center justify-between mb-6 mt-0">
+    <button onclick={() => goto('/home')}>
+      <AIcon path={mdiHome} size="36" class="text-gray-500" />
+    </button>
+    <button
+      class="flex items-center gap-2 bg-gray-800 text-white font-bold px-4 py-2 rounded shadow text-sm"
+      onclick={() => goto('/attendance/admin/dashboard')}
+    >
+      <AIcon path={mdiMonitor} size="20" />
+      Today's Dashboard
+    </button>
+  </div>
+  <div class="text-2xl font-bold mb-6">Attendance Sessions</div>
 
   <!-- Salt config -->
   <div class="bg-white rounded shadow px-4 py-3 mb-6">
