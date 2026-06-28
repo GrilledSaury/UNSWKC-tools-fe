@@ -27,6 +27,8 @@
       const docSnap = await getDoc(doc(db, 'user', u.uid))
       if (docSnap.exists()) {
         userProfile.set({ ...docSnap.data(), uid: u.uid })
+        const p = get(page)
+        if (p.url.pathname === '/') goto(p.url.searchParams.get('app') || '/home')
       } else {
         userProfile.set(null)
         redirectToLogin()
