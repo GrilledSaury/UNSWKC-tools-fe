@@ -1,5 +1,5 @@
 <script>
-  import { mdiAccount, mdiLogout, mdiSchool, mdiAccountGroup, mdiCalendarCheck, mdiNotebookOutline, mdiCalendarMonth, mdiReceiptTextOutline } from '@mdi/js'
+  import { mdiAccount, mdiLogout, mdiSchool, mdiAccountGroup, mdiCalendarCheck, mdiNotebookOutline, mdiCalendarMonth, mdiReceiptTextOutline, mdiCartOutline, mdiClipboardList } from '@mdi/js'
   import { AIcon } from 'ace.svelte'
   import { goto } from '$app/navigation'
   import { userProfile } from '$lib/stores'
@@ -9,6 +9,7 @@
     { label: 'My Profile', icon: mdiAccount, color: 'text-blue-500', href: () => '/profile/?uid=' + $userProfile.uid },
     { label: 'Beginner Course', icon: mdiSchool, color: 'text-yellow-500', href: () => '/beginner' },
     { label: 'My Attendance', icon: mdiCalendarMonth, color: 'text-green-500', href: () => '/attendance' },
+    { label: 'My Orders', icon: mdiCartOutline, color: 'text-indigo-500', href: () => '/orders' },
   ]
 
   // Apps shown only when user has the matching permission
@@ -18,6 +19,7 @@
     { permission: 'attendance', label: 'Attendance', icon: mdiCalendarCheck, color: 'text-green-600', href: '/attendance/admin' },
     { permission: 'bogu', label: 'Bogu Log', icon: mdiNotebookOutline, color: 'text-red-600', href: '/bogu/admin' },
     { permission: 'invoice', label: 'Invoice Generator', icon: mdiReceiptTextOutline, color: 'text-purple-600', href: '/invoice/admin' },
+    { permission: 'orders', label: 'Order Events', icon: mdiClipboardList, color: 'text-teal-600', href: '/orders/admin' },
   ]
 </script>
 
