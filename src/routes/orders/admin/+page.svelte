@@ -6,10 +6,11 @@
     doc, orderBy, query, serverTimestamp, Timestamp,
   } from 'firebase/firestore'
   import { AIcon } from 'ace.svelte'
-  import { mdiHome, mdiPlus, mdiPencil, mdiDelete, mdiChevronRight, mdiClose, mdiCheck } from '@mdi/js'
+  import { mdiHome, mdiPlus, mdiPencil, mdiDelete, mdiClose, mdiCheck } from '@mdi/js'
   import { goto } from '$app/navigation'
   import { userProfile } from '$lib/stores'
   import Swal from 'sweetalert2'
+  import EventList from '$lib/components/EventList.svelte'
 
   let events  = $state([])
   let loading = $state(true)
@@ -18,11 +19,6 @@
   let showModal = $state(false)
   let editId    = $state(null)
   let form      = $state({ title: '', description: '', dueDate: '', status: 'open' })
-
-  function fmt(ts) {
-    if (!ts) return '—'
-    return ts.toDate().toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
-  }
 
   async function load() {
     const snap = await getDocs(query(collection(db, 'events'), orderBy('dueDate', 'asc')))
@@ -63,7 +59,7 @@
         status:      form.status,
       }
       if (editId) {
-        await updateDoc(doc(db, 'events', editId), data)
+        await updateDoc(doc(db, 'events', editId), { ...data, updatedAt: serverTimestamp() })
       } else {
         await addDoc(collection(db, 'events'), { ...data, createdAt: serverTimestamp() })
       }
@@ -117,34 +113,17 @@
 
   {#if loading}
     <div class="text-gray-500 text-center mt-16">Loading...</div>
-
-  {:else if events.length === 0}
-    <div class="text-gray-400 text-center mt-16">No events yet. Create one above.</div>
-
   {:else}
-    <div class="flex flex-col gap-2">
-      {#each events as ev}
-        <div class="bg-white rounded shadow px-4 py-3 flex items-center gap-3">
-          <button class="grow min-w-0 text-left" onclick={() => goto('/orders/admin/' + ev.id)}>
-            <div class="font-bold text-gray-800 truncate">{ev.title}</div>
-            <div class="text-sm text-gray-500 mt-0.5">Due {fmt(ev.dueDate)}</div>
-          </button>
-          <span class="text-xs font-bold px-4 py-1 rounded-full shrink-0
-            {ev.status === 'open' ? 'bg-green-500 text-white' : 'bg-gray-500 text-white'}">
-            {ev.status}
-          </span>
-          <button class="text-blue-500 p-1 shrink-0" onclick={() => openEdit(ev)}>
-            <AIcon path={mdiPencil} />
-          </button>
-          <button class="text-red-400 p-1 shrink-0" onclick={() => remove(ev)}>
-            <AIcon path={mdiDelete} />
-          </button>
-          <button class="text-gray-300 p-1 shrink-0" onclick={() => goto('/orders/admin/' + ev.id)}>
-            <AIcon path={mdiChevronRight} size="20" />
-          </button>
-        </div>
-      {/each}
-    </div>
+    <EventList {events} onSelect={ev => goto('/orders/admin/' + ev.id)}>
+      {#snippet rowActions(ev)}
+        <button class="text-blue-500 p-1 shrink-0" onclick={() => openEdit(ev)}>
+          <AIcon path={mdiPencil} />
+        </button>
+        <button class="text-red-400 p-1 shrink-0" onclick={() => remove(ev)}>
+          <AIcon path={mdiDelete} />
+        </button>
+      {/snippet}
+    </EventList>
   {/if}
 
 </div>

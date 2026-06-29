@@ -51,6 +51,13 @@
 
   onMount(() => {
     if (!$userProfile?.permissions?.includes('invoice')) goto('/home')
+    const pending = localStorage.getItem('pendingInvoiceImport')
+    if (pending) {
+      const data = JSON.parse(pending)
+      parseCSV(data.csv)
+      if (data.payDesc) ev.payDesc = data.payDesc
+      localStorage.removeItem('pendingInvoiceImport')
+    }
   })
 
   // ── CSV import ────────────────────────────────────────────────────────────
