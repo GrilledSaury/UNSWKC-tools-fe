@@ -7,8 +7,10 @@
     itemPrices      = {},
     editable        = false,
     priceEditable   = false,
+    urlRequired     = true,
     onItemsChange   = () => {},
     onPriceChange   = () => {},
+    onPricesChange  = () => {},
     onSendToInvoice = null,
   } = $props()
 
@@ -29,8 +31,10 @@
   }
 
   function save() {
-    if (!form.name.trim()) return
-    const item = { name: form.name.trim(), url: form.url.trim(), description: form.description.trim() }
+    if (!form.name.trim() || (urlRequired && !form.url.trim())) return
+    const rawUrl = form.url.trim()
+    const url = /^https?:\/\//i.test(rawUrl) ? rawUrl : 'https://' + rawUrl
+    const item = { name: form.name.trim(), url, description: form.description.trim() }
     if (editIndex === null) {
       onItemsChange([...items, item])
     } else {
@@ -41,7 +45,15 @@
   }
 
   function remove(i) {
-    onItemsChange(items.filter((_, idx) => idx !== i))
+    const newItems = items.filter((_, idx) => idx !== i)
+    const newPrices = {}
+    Object.entries(itemPrices).forEach(([k, v]) => {
+      const ki = Number(k)
+      if (ki < i) newPrices[ki] = v
+      else if (ki > i) newPrices[ki - 1] = v
+    })
+    onItemsChange(newItems)
+    onPricesChange(newPrices)
   }
 
   function fmtPrice(i) {
@@ -155,12 +167,12 @@
           <input bind:value={form.name} class="border rounded px-2 py-1.5" placeholder="e.g. Shinai Bag" />
         </label>
         <label class="flex flex-col">
-          <span class="font-bold text-sm mb-1">URL <span class="text-gray-400 font-normal">(optional)</span></span>
-          <input bind:value={form.url} class="border rounded px-2 py-1.5" placeholder="https://tozando…" />
+          <span class="font-bold text-sm mb-1">URL {#if urlRequired}<span class="text-red-400">*</span>{:else}<span class="text-gray-400 font-normal">(optional)</span>{/if}</span>
+          <input bind:value={form.url} class="border rounded px-2 py-1.5" placeholder="e.g. https://tozandoshop.com/collections/shinai-bags/products/kanmuri-shinai-bag" />
         </label>
         <label class="flex flex-col">
           <span class="font-bold text-sm mb-1">Description <span class="text-gray-400 font-normal">(optional)</span></span>
-          <input bind:value={form.description} class="border rounded px-2 py-1.5" placeholder="Size, colour, notes…" />
+          <textarea bind:value={form.description} rows="3" class="border rounded px-2 py-1.5 resize-none min-h-48" placeholder="Size, colour, notes…"></textarea>
         </label>
       </div>
       <div class="p-4 border-t flex justify-end gap-2">
@@ -173,7 +185,7 @@
         <button
           class="px-4 py-1.5 rounded bg-blue-500 text-white font-bold flex items-center gap-1 disabled:opacity-50"
           onclick={save}
-          disabled={!form.name.trim()}
+          disabled={!form.name.trim() || (urlRequired && !form.url.trim())}
         >
           <AIcon path={mdiCheck} size="18" />{editIndex === null ? 'Add' : 'Save'}
         </button>

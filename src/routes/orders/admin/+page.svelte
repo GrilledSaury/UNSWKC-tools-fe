@@ -2,7 +2,7 @@
   import { onMount } from 'svelte'
   import { db } from '$lib/firebase'
   import {
-    collection, getDocs, addDoc, updateDoc, deleteDoc,
+    collection, getDocs, addDoc, updateDoc, writeBatch,
     doc, orderBy, query, serverTimestamp, Timestamp,
   } from 'firebase/firestore'
   import { AIcon } from 'ace.svelte'
@@ -74,14 +74,18 @@
   async function remove(ev) {
     const { isConfirmed } = await Swal.fire({
       title: 'Delete event?',
-      text: ev.title,
-      confirmButtonText: 'Delete',
+      html: `<div class="text-left"><p class="font-semibold mb-2">${ev.title}</p><p class="text-red-600 text-sm font-bold">⚠ This will permanently delete ALL user orders in this event.</p><p class="text-gray-500 text-sm mt-1">This cannot be undone.</p></div>`,
+      confirmButtonText: 'Delete Everything',
       confirmButtonColor: '#ef4444',
       showCancelButton: true,
     })
     if (!isConfirmed) return
     try {
-      await deleteDoc(doc(db, 'events', ev.id))
+      const ordersSnap = await getDocs(collection(db, 'events', ev.id, 'orders'))
+      const batch = writeBatch(db)
+      ordersSnap.docs.forEach(d => batch.delete(d.ref))
+      batch.delete(doc(db, 'events', ev.id))
+      await batch.commit()
       events = events.filter(e => e.id !== ev.id)
     } catch (err) {
       Swal.fire('Error', err.message, 'error')

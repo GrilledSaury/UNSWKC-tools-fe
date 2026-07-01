@@ -115,6 +115,15 @@
     }
   }
 
+  async function handlePricesChange(uid, newPrices) {
+    try {
+      await updateDoc(doc(db, 'events', eventId, 'orders', uid), { itemPrices: newPrices, updatedAt: serverTimestamp() })
+      orders = orders.map(o => o.uid === uid ? { ...o, itemPrices: newPrices, updatedAt: Timestamp.now() } : o)
+    } catch (err) {
+      Swal.fire('Error', err.message, 'error')
+    }
+  }
+
   function csvField(s) {
     s = String(s ?? '')
     return s.includes(',') || s.includes('"') || s.includes('\n')
@@ -241,8 +250,10 @@
               itemPrices={order.itemPrices ?? {}}
               editable={true}
               priceEditable={true}
+              urlRequired={false}
               onItemsChange={(items) => handleItemsChange(order.uid, items)}
               onPriceChange={(i, v) => handlePriceChange(order.uid, i, v)}
+              onPricesChange={(prices) => handlePricesChange(order.uid, prices)}
               onSendToInvoice={() => sendToInvoice(order)}
             />
 
