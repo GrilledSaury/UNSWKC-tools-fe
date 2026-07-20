@@ -3,7 +3,7 @@ import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
-  kit: { adapter: adapter() },
+  kit: { adapter: adapter({ fallback: '200.html' }) },
   preprocess: vitePreprocess(),
   // onwarn: (warning, handler) => {
   //   if (warning.code === 'a11y-click-events-have-key-events') return
