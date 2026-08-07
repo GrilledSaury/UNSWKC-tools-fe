@@ -307,7 +307,7 @@ Henry Black,0,Extra item,1,10.00`
   <!-- Header -->
   <div class="flex items-center gap-4 mb-6">
     <button onclick={() => goto('/home')}>
-      <AIcon path={mdiHome} size="36" class="text-gray-500" />
+      <AIcon path={mdiHome} size="36px" class="text-gray-500" />
     </button>
     <div class="text-2xl font-bold grow">Invoice Generator</div>
     {#if people.length > 0}
@@ -315,7 +315,7 @@ Henry Black,0,Extra item,1,10.00`
         class="flex items-center gap-1.5 bg-gray-800 text-white font-bold px-4 py-2 rounded shadow text-sm"
         onclick={printAll}
       >
-        <AIcon path={mdiPrinter} size="18" />
+        <AIcon path={mdiPrinter} size="18px" />
         Print All ({people.length})
       </button>
     {/if}
@@ -372,7 +372,7 @@ Henry Black,0,Extra item,1,10.00`
       onclick={() => showCfg = !showCfg}
     >
       <span class="uppercase tracking-wide">Default Config</span>
-      <AIcon path={showCfg ? mdiChevronUp : mdiChevronDown} size="20" />
+      <AIcon path={showCfg ? mdiChevronUp : mdiChevronDown} size="20px" />
     </button>
     {#if showCfg}
       <div class="px-4 pb-4 grid grid-cols-1 md:grid-cols-2 gap-3 border-t pt-3">
@@ -419,7 +419,7 @@ Henry Black,0,Extra item,1,10.00`
   <!-- Import / Add -->
   <div class="flex items-center gap-3 mb-4 flex-wrap">
     <label class="flex items-center gap-2 bg-white border rounded shadow-sm px-3 py-2 text-sm font-medium cursor-pointer hover:bg-gray-50">
-      <AIcon path={mdiUpload} size="18" class="text-gray-500" />
+      <AIcon path={mdiUpload} size="18px" class="text-gray-500" />
       Import CSV
       <input type="file" accept=".csv,.txt" class="hidden" onchange={handleFile} />
     </label>
@@ -427,7 +427,7 @@ Henry Black,0,Extra item,1,10.00`
       class="flex items-center gap-2 bg-green-500 text-white rounded shadow-sm px-3 py-2 text-sm font-bold"
       onclick={openAdd}
     >
-      <AIcon path={mdiPlus} size="18" />Add Person
+      <AIcon path={mdiPlus} size="18px" />Add Person
     </button>
     <button
       class="text-xs text-gray-400 underline"
@@ -476,16 +476,16 @@ Henry Black,0,Extra item,1,10.00`
           </div>
           <div class="flex items-center gap-1 shrink-0">
             <button class="text-gray-400 p-1 hover:text-gray-600" title="Preview" onclick={() => openPrint(invoiceHTML(person, i), `Invoice ${invoiceId(i)}`)}>
-              <AIcon path={mdiEye} size="20" />
+              <AIcon path={mdiEye} size="20px" />
             </button>
             <button class="text-gray-400 p-1 hover:text-gray-600" title="Print" onclick={() => printOne(person, i)}>
-              <AIcon path={mdiPrinter} size="20" />
+              <AIcon path={mdiPrinter} size="20px" />
             </button>
             <button class="text-blue-500 p-1" title="Edit" onclick={() => openEdit(i)}>
-              <AIcon path={mdiPencil} size="20" />
+              <AIcon path={mdiPencil} size="20px" />
             </button>
             <button class="text-red-400 p-1" title="Delete" onclick={() => removePerson(i)}>
-              <AIcon path={mdiDelete} size="20" />
+              <AIcon path={mdiDelete} size="20px" />
             </button>
           </div>
         </div>
@@ -528,7 +528,7 @@ Henry Black,0,Extra item,1,10.00`
               class="flex items-center gap-1 text-xs text-green-600 font-bold"
               onclick={addItem}
             >
-              <AIcon path={mdiPlus} size="16" />Add Item
+              <AIcon path={mdiPlus} size="16px" />Add Item
             </button>
           </div>
           <div class="flex flex-col gap-2">
@@ -558,7 +558,7 @@ Henry Black,0,Extra item,1,10.00`
                   onclick={() => removeItem(j)}
                   disabled={editPerson.items.length === 1}
                 >
-                  <AIcon path={mdiClose} size="16" />
+                  <AIcon path={mdiClose} size="16px" />
                 </button>
               </div>
             {/each}
@@ -584,14 +584,14 @@ Henry Black,0,Extra item,1,10.00`
           class="px-4 py-1.5 rounded border font-bold flex items-center gap-1 text-sm"
           onclick={() => showModal = false}
         >
-          <AIcon path={mdiClose} size="16" />Cancel
+          <AIcon path={mdiClose} size="16px" />Cancel
         </button>
         <button
           class="px-4 py-1.5 rounded bg-blue-500 text-white font-bold flex items-center gap-1 text-sm disabled:opacity-40"
           onclick={saveModal}
           disabled={!editPerson.name.trim() || !editPerson.items.length}
         >
-          <AIcon path={mdiCheck} size="16" />Save
+          <AIcon path={mdiCheck} size="16px" />Save
         </button>
       </div>
     </div>

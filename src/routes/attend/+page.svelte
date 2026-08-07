@@ -88,29 +88,29 @@
 
     {:else if status === 'error'}
       <div class="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
-        <AIcon path={mdiClose} class="text-red-500" size="32" />
+        <AIcon path={mdiClose} class="text-red-500" size="32px" />
       </div>
       <div class="font-bold text-xl mb-2">Something went wrong</div>
       <div class="text-gray-500 text-sm">{errorMsg}</div>
 
     {:else if status === 'already'}
       <div class="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-4">
-        <AIcon path={mdiCheck} class="text-blue-500" size="32" />
+        <AIcon path={mdiCheck} class="text-blue-500" size="32px" />
       </div>
       <div class="font-bold text-xl mb-1">Already marked</div>
       <div class="text-gray-500 text-sm">{fmtDate(session.start)}</div>
       <button class="mt-6 text-blue-500 text-sm flex items-center gap-1 mx-auto" onclick={() => goto('/home')}>
-        <AIcon path={mdiHome} size="18" />Home
+        <AIcon path={mdiHome} size="18px" />Home
       </button>
 
     {:else if status === 'done'}
       <div class="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
-        <AIcon path={mdiCheck} class="text-green-500" size="32" />
+        <AIcon path={mdiCheck} class="text-green-500" size="32px" />
       </div>
       <div class="font-bold text-xl text-green-600 mb-1">Attendance marked!</div>
       <div class="text-gray-500 text-sm">{fmtDate(session.start)}</div>
       <button class="mt-6 text-blue-500 text-sm flex items-center gap-1 mx-auto" onclick={() => goto('/home')}>
-        <AIcon path={mdiHome} size="18" />Home
+        <AIcon path={mdiHome} size="18px" />Home
       </button>
 
     {:else}

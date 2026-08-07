@@ -172,7 +172,7 @@
 <div class="w-screen min-h-screen bg-gray-100 p-4 md:px-16 md:py-8">
 
   <button onclick={() => goto('/home')}>
-    <AIcon path={mdiHome} size="36" class="text-gray-500" />
+    <AIcon path={mdiHome} size="36px" class="text-gray-500" />
   </button>
 
   <!-- Title + admin user search -->
@@ -215,7 +215,7 @@
         onclick={() => selectYear(selectedYear - 1)}
         disabled={loadingYear}
       >
-        <AIcon path={mdiChevronLeft} size="24" />
+        <AIcon path={mdiChevronLeft} size="24px" />
       </button>
       <span class="font-bold text-xl w-16 text-center">{selectedYear}</span>
       <button
@@ -223,7 +223,7 @@
         onclick={() => selectYear(selectedYear + 1)}
         disabled={loadingYear || selectedYear >= currentYear}
       >
-        <AIcon path={mdiChevronRight} size="24" />
+        <AIcon path={mdiChevronRight} size="24px" />
       </button>
       {#if !loadingYear}
         <span class="text-sm text-gray-500 ml-2">{totalAttended} sessions attended</span>

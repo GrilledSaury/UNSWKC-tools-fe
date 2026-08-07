@@ -196,7 +196,7 @@
 <div class="w-screen min-h-screen bg-gray-100 p-4 md:px-16 md:py-8">
 
   <button onclick={() => goto('/orders/admin')}>
-    <AIcon path={mdiArrowLeft} size="36" class="text-gray-500" />
+    <AIcon path={mdiArrowLeft} size="36px" class="text-gray-500" />
   </button>
 
   {#if loading}
@@ -239,7 +239,7 @@
               <span class="text-xs text-gray-400 shrink-0">
                 {order.items?.length ?? 0} item{(order.items?.length ?? 0) === 1 ? '' : 's'}
               </span>
-              <AIcon path={expanded.has(order.uid) ? mdiChevronUp : mdiChevronDown} size="20" class="text-gray-400 shrink-0" />
+              <AIcon path={expanded.has(order.uid) ? mdiChevronUp : mdiChevronDown} size="20px" class="text-gray-400 shrink-0" />
             </button>
 
             {#if expanded.has(order.uid)}
@@ -276,7 +276,7 @@
                   class="flex items-center gap-1 bg-gray-700 text-white font-bold px-3 py-1.5 rounded shadow text-sm"
                   onclick={() => unlock(order.uid)}
                 >
-                  <AIcon path={mdiLockOpen} size="16" />Unlock
+                  <AIcon path={mdiLockOpen} size="16px" />Unlock
                 </button>
               {/if}
 

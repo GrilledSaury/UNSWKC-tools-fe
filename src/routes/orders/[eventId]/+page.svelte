@@ -134,7 +134,7 @@
 <div class="w-screen min-h-screen bg-gray-100 p-4 md:px-16 md:py-8">
 
   <button onclick={() => goto('/orders')}>
-    <AIcon path={mdiArrowLeft} size="36" class="text-gray-500" />
+    <AIcon path={mdiArrowLeft} size="36px" class="text-gray-500" />
   </button>
 
   {#if loading}
@@ -157,11 +157,11 @@
         </span>
         {#if order.locked}
           <span class="flex mt-2 items-center gap-1 text-xs text-gray-500 whitespace-nowrap overflow-scroll">
-            <AIcon path={mdiLock} size="14" />Locked — contact admin to make changes
+            <AIcon path={mdiLock} size="14px" />Locked — contact admin to make changes
           </span>
         {:else}
           <span class="flex mt-2 items-center gap-1 text-xs text-gray-400 whitespace-nowrap overflow-scroll">
-            <AIcon path={mdiLockOpen} size="14" />Unlocked
+            <AIcon path={mdiLockOpen} size="14px" />Unlocked
           </span>
         {/if}
         {#if order.status === 'rejected'}
@@ -212,7 +212,7 @@
         onclick={lockOrder}
         disabled={saving}
       >
-        <AIcon path={mdiLock} size="18" />Lock & Submit Order
+        <AIcon path={mdiLock} size="18px" />Lock & Submit Order
       </button>
       <p class="text-xs text-gray-400 mt-2">Locking tells admin your order is ready to review.</p>
     {/if}
