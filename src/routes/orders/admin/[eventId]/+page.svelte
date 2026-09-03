@@ -53,18 +53,23 @@
   }
 
   async function load() {
-    const [evSnap, ordersSnap, usersSnap] = await Promise.all([
+    const [evSnap, ordersSnap, usersSnap, memberSnap] = await Promise.all([
       getDoc(doc(db, 'events', eventId)),
       getDocs(collection(db, 'events', eventId, 'orders')),
       getDocs(collection(db, 'user')),
+      getDocs(collection(db, 'membership')),
     ])
     if (!evSnap.exists()) { goto('/orders/admin'); return }
     event = { id: evSnap.id, ...evSnap.data() }
 
     const nameMap = Object.fromEntries(usersSnap.docs.map(d => [d.id, d.data().name]))
+    const now = new Date()
+    const memberSet = new Set(
+      memberSnap.docs.filter(d => d.data().expiresAt?.toDate() > now).map(d => d.id)
+    )
 
     orders = ordersSnap.docs
-      .map(d => ({ uid: d.id, userName: nameMap[d.id] ?? d.id, ...d.data() }))
+      .map(d => ({ uid: d.id, userName: nameMap[d.id] ?? d.id, member: memberSet.has(d.id), ...d.data() }))
       .sort((a, b) => a.userName.localeCompare(b.userName))
   }
 
@@ -223,7 +228,10 @@
               onclick={() => toggleExpanded(order.uid)}
             >
               <div class="grow min-w-0">
-                <div class="font-bold text-gray-800">{order.userName}</div>
+                <div class="font-bold text-gray-800 flex items-center gap-1.5">
+                  <span class="{order.member ? 'text-green-500' : 'text-yellow-400'}" title={order.member ? 'Member' : 'Non-member'}>●</span>
+                  {order.userName}
+                </div>
                 {#if fmtDatetime(order.updatedAt)}
                   <div class="text-xs text-gray-400 mt-0.5">Updated {fmtDatetime(order.updatedAt)}</div>
                 {/if}

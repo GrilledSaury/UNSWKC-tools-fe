@@ -48,17 +48,22 @@
       const nameMap    = Object.fromEntries(users.map(u => [u.uid, u.name]))
 
       const checkedIn = new Set()
-      await Promise.all(
-        sessionIds.flatMap(sid =>
+      const memberSet = new Set()
+      await Promise.all([
+        ...sessionIds.flatMap(sid =>
           users.map(async u => {
             const snap = await getDoc(doc(db, 'attendance', u.uid, 'sessions', sid))
             if (snap.exists()) checkedIn.add(u.uid)
           })
-        )
-      )
+        ),
+        ...users.map(async u => {
+          const snap = await getDoc(doc(db, 'membership', u.uid))
+          if (snap.exists() && snap.data().expiresAt?.toDate() > new Date()) memberSet.add(u.uid)
+        }),
+      ])
 
       attendees = [...checkedIn]
-        .map(uid => ({ uid, name: nameMap[uid] }))
+        .map(uid => ({ uid, name: nameMap[uid], member: memberSet.has(uid) }))
         .sort((a, b) => a.name.localeCompare(b.name))
     } finally {
       refreshing = false
@@ -190,8 +195,8 @@
 
     <!-- Names panel: full width on mobile (scrolls), 1/3 on desktop -->
     <div class="flex-1 p-6 md:overflow-y-auto flex flex-wrap gap-3 content-start">
-      {#each attendees as { name }}
-        <div class="bg-green-800 text-green-100 rounded-lg px-4 py-2 text-sm font-semibold tracking-wide">
+      {#each attendees as { name, member }}
+        <div class="rounded-lg px-4 py-2 text-sm font-semibold tracking-wide {member ? 'bg-green-800 text-green-100' : 'bg-yellow-800 text-yellow-100'}">
           {name}
         </div>
       {/each}

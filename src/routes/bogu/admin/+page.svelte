@@ -89,14 +89,20 @@
   async function load() {
     loading = true
     try {
-      const [boguSnap, usersSnap] = await Promise.all([
+      const [boguSnap, usersSnap, memberSnap] = await Promise.all([
         getDocs(collection(db, 'bogu')),
         getDocs(collection(db, 'user')),
+        getDocs(collection(db, 'membership')),
       ])
 
       users = usersSnap.docs
         .map(d => ({ uid: d.id, name: d.data().name }))
         .sort((a, b) => a.name.localeCompare(b.name))
+
+      const now = new Date()
+      const memberSet = new Set(
+        memberSnap.docs.filter(d => d.data().expiresAt?.toDate() > now).map(d => d.id)
+      )
 
       // Collect unique userIds to fetch attendance subcollections in parallel
       const userIds = [...new Set(
@@ -115,7 +121,7 @@
         const data  = d.data()
         const item  = (data.item && typeof data.item === 'object') ? data.item : emptyItem()
         const score = attendanceScore(data.userId ? attendanceMap[data.userId] : null)
-        list.push({ id: d.id, name: data.name, userId: data.userId ?? null, item, note: data.note, score })
+        list.push({ id: d.id, name: data.name, userId: data.userId ?? null, member: memberSet.has(data.userId), item, note: data.note, score })
       })
       entries = list
     } catch (err) {
@@ -226,7 +232,10 @@
 
           <!-- Left: name + item + note -->
           <div class="grow min-w-0">
-            <div class="font-bold text-gray-800">{entry.name}</div>
+            <div class="font-bold text-gray-800 flex items-center gap-1.5">
+              <span class="{entry.member ? 'text-green-500' : 'text-yellow-400'}" title={entry.member ? 'Member' : 'Non-member'}>●</span>
+              {entry.name}
+            </div>
             <div class="flex flex-wrap gap-1 mt-1">
               {#each PIECES as piece}
                 <span class="text-xs px-2 py-0.5 rounded-full font-medium
