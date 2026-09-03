@@ -277,14 +277,20 @@
     viewLoading = true
     viewModal   = { session, rows: [] }
     try {
-        const usersSnap = await getDocs(collection(db, 'user'))
+      const usersSnap = await getDocs(collection(db, 'user'))
 
-      // For each user, fetch their specific session doc directly
-      const checkins = {}
-      await Promise.all(usersSnap.docs.map(async u => {
-        const sessionDoc = await getDoc(doc(db, 'attendance', u.id, 'sessions', session.id))
-        if (sessionDoc.exists()) checkins[u.id] = sessionDoc.data().t?.toDate() ?? null
-      }))
+      const checkins  = {}
+      const memberSet = new Set()
+      await Promise.all([
+        ...usersSnap.docs.map(async u => {
+          const sessionDoc = await getDoc(doc(db, 'attendance', u.id, 'sessions', session.id))
+          if (sessionDoc.exists()) checkins[u.id] = sessionDoc.data().t?.toDate() ?? null
+        }),
+        ...usersSnap.docs.map(async u => {
+          const memberDoc = await getDoc(doc(db, 'membership', u.id))
+          if (memberDoc.exists() && memberDoc.data().expiresAt?.toDate() > new Date()) memberSet.add(u.id)
+        }),
+      ])
 
       const rows = []
       usersSnap.forEach(u => {
@@ -293,6 +299,7 @@
           name:      u.data().name,
           checkedIn: u.id in checkins,
           time:      checkins[u.id] ?? null,
+          member:    memberSet.has(u.id),
         })
       })
 
@@ -501,15 +508,16 @@
             <div class="flex items-center px-4 py-2.5 border-b border-gray-50 last:border-0">
               <button
                 class="w-6 h-6 rounded-full flex items-center justify-center mr-3 shrink-0 transition-colors"
-                class:bg-green-100={row.checkedIn}
+                class:bg-green-100={row.checkedIn && row.member}
+                class:bg-yellow-100={row.checkedIn && !row.member}
                 class:bg-gray-100={!row.checkedIn}
                 class:cursor-default={row.checkedIn}
                 class:hover:bg-gray-200={!row.checkedIn}
                 onclick={() => !row.checkedIn && openMark(row)}
-                title={row.checkedIn ? '' : 'Mark as attended'}
+                title={row.checkedIn ? (row.member ? '' : 'Non-member') : 'Mark as attended'}
               >
                 {#if row.checkedIn}
-                  <AIcon path={mdiCheck} size="16px" class="text-green-500" />
+                  <AIcon path={mdiCheck} size="16px" class={row.member ? 'text-green-500' : 'text-yellow-500'} />
                 {/if}
               </button>
               <div class="grow font-medium text-sm">{row.name}</div>
