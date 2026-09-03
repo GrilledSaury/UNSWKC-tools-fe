@@ -35,7 +35,7 @@
         </span>
         {@render rowActions?.(ev)}
         <button class="text-gray-300 p-1 shrink-0" onclick={() => onSelect(ev)}>
-          <AIcon path={mdiChevronRight} size="20" />
+          <AIcon path={mdiChevronRight} size="20px" />
         </button>
       </div>
     {/each}

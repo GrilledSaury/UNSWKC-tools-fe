@@ -25,7 +25,7 @@
 <div class="w-screen min-h-screen bg-gray-100 p-4 md:px-16 md:py-8">
 
   <button onclick={() => goto('/home')}>
-    <AIcon path={mdiHome} size="36" class="text-gray-500" />
+    <AIcon path={mdiHome} size="36px" class="text-gray-500" />
   </button>
   <div class="text-2xl font-bold mt-4 mb-6">My Orders</div>
 

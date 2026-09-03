@@ -93,7 +93,7 @@
                 class="inline-flex items-center gap-0.5 text-xs text-blue-500 hover:underline mt-0.5"
                 onclick={e => e.stopPropagation()}
               >
-                <AIcon path={mdiOpenInNew} size="12" />Link
+                <AIcon path={mdiOpenInNew} size="12px" />Link
               </a>
             {/if}
             {#if item.description}
@@ -120,10 +120,10 @@
           <!-- Edit / delete -->
           {#if editable}
             <button class="text-blue-400 p-0.5 shrink-0" onclick={() => openEdit(i)}>
-              <AIcon path={mdiPencil} size="16" />
+              <AIcon path={mdiPencil} size="16px" />
             </button>
             <button class="text-red-400 p-0.5 shrink-0" onclick={() => remove(i)}>
-              <AIcon path={mdiDelete} size="16" />
+              <AIcon path={mdiDelete} size="16px" />
             </button>
           {/if}
         </div>
@@ -149,7 +149,7 @@
       class="mt-2 flex items-center gap-1 text-sm text-green-600 font-semibold hover:text-green-700"
       onclick={openAdd}
     >
-      <AIcon path={mdiPlus} size="18" />Add item
+      <AIcon path={mdiPlus} size="18px" />Add item
     </button>
   {/if}
 </div>
@@ -180,14 +180,14 @@
           class="px-4 py-1.5 rounded border font-bold flex items-center gap-1"
           onclick={() => showModal = false}
         >
-          <AIcon path={mdiClose} size="18" />Cancel
+          <AIcon path={mdiClose} size="18px" />Cancel
         </button>
         <button
           class="px-4 py-1.5 rounded bg-blue-500 text-white font-bold flex items-center gap-1 disabled:opacity-50"
           onclick={save}
           disabled={!form.name.trim() || (urlRequired && !form.url.trim())}
         >
-          <AIcon path={mdiCheck} size="18" />{editIndex === null ? 'Add' : 'Save'}
+          <AIcon path={mdiCheck} size="18px" />{editIndex === null ? 'Add' : 'Save'}
         </button>
       </div>
     </div>

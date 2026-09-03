@@ -125,7 +125,7 @@
     class="absolute top-4 left-4 text-gray-600 hover:text-gray-300 z-10"
     onclick={() => goto('/attendance/admin')}
   >
-    <AIcon path={mdiArrowLeft} size="28" />
+    <AIcon path={mdiArrowLeft} size="28px" />
   </button>
 
   <button
@@ -133,7 +133,7 @@
     onclick={toggleFullscreen}
     title={isFullscreen ? 'Exit fullscreen (F)' : 'Fullscreen (F)'}
   >
-    <AIcon path={isFullscreen ? mdiFullscreenExit : mdiFullscreen} size="28" />
+    <AIcon path={isFullscreen ? mdiFullscreenExit : mdiFullscreen} size="28px" />
   </button>
 
   {#if loading}

@@ -376,13 +376,13 @@
 
   <div class="flex items-center justify-between mb-6 mt-0">
     <button onclick={() => goto('/home')}>
-      <AIcon path={mdiHome} size="36" class="text-gray-500" />
+      <AIcon path={mdiHome} size="36px" class="text-gray-500" />
     </button>
     <button
       class="flex items-center gap-2 bg-gray-800 text-white font-bold px-4 py-2 rounded shadow text-sm"
       onclick={() => goto('/attendance/admin/dashboard')}
     >
-      <AIcon path={mdiMonitor} size="20" />
+      <AIcon path={mdiMonitor} size="20px" />
       Today's Dashboard
     </button>
   </div>
@@ -409,7 +409,7 @@
         class="bg-red-500 text-white font-bold px-3 py-1 rounded text-sm flex items-center gap-1 shrink-0"
         onclick={regenerateSalt}
       >
-        <AIcon path={mdiRefresh} size="18" />Regenerate
+        <AIcon path={mdiRefresh} size="18px" />Regenerate
       </button>
     </div>
   </div>
@@ -429,21 +429,21 @@
       class="bg-blue-500 text-white font-bold px-3 py-1.5 rounded shadow text-sm flex items-center gap-1 disabled:opacity-50"
       onclick={generateStandard} disabled={loading || !salt}
     >
-      <AIcon path={mdiRefresh} size="18" />Generate Standard
+      <AIcon path={mdiRefresh} size="18px" />Generate Standard
     </button>
     <button
       class="bg-green-500 text-white font-bold px-3 py-1.5 rounded shadow text-sm flex items-center gap-1 disabled:opacity-50"
       onclick={() => { addForm = { date: '', startTime: '19:00', endTime: '21:30' }; showAddModal = true }}
       disabled={!salt}
     >
-      <AIcon path={mdiPlus} size="18" />Add Custom
+      <AIcon path={mdiPlus} size="18px" />Add Custom
     </button>
     {#if sessions.length > 0}
       <button
         class="bg-gray-700 text-white font-bold px-3 py-1.5 rounded shadow text-sm flex items-center gap-1"
         onclick={printBook}
       >
-        <AIcon path={mdiPrinter} size="18" />Print Book
+        <AIcon path={mdiPrinter} size="18px" />Print Book
       </button>
     {/if}
   </div>
@@ -509,7 +509,7 @@
                 title={row.checkedIn ? '' : 'Mark as attended'}
               >
                 {#if row.checkedIn}
-                  <AIcon path={mdiCheck} size="16" class="text-green-500" />
+                  <AIcon path={mdiCheck} size="16px" class="text-green-500" />
                 {/if}
               </button>
               <div class="grow font-medium text-sm">{row.name}</div>
@@ -555,7 +555,7 @@
           onclick={confirmMark}
           disabled={marking || !markTime}
         >
-          <AIcon path={mdiCheck} size="18" />{marking ? 'Saving...' : 'Confirm'}
+          <AIcon path={mdiCheck} size="18px" />{marking ? 'Saving...' : 'Confirm'}
         </button>
       </div>
     </div>
@@ -572,7 +572,7 @@
       <div class="p-4 border-t w-full flex justify-end gap-2">
         <button class="px-4 py-1.5 rounded border font-bold" onclick={() => qrModal = null}>Close</button>
         <button class="px-4 py-1.5 rounded bg-indigo-500 text-white font-bold flex items-center gap-1" onclick={downloadQR}>
-          <AIcon path={mdiQrcode} size="18" />Download
+          <AIcon path={mdiQrcode} size="18px" />Download
         </button>
       </div>
     </div>

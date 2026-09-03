@@ -139,7 +139,7 @@ async function showQRCode () {
 
 <div class="w-screen min-h-screen bg-gray-100 p-4 md:px-16 md:py-8">
   <button onclick={() => goto('/home')}>
-    <AIcon path={mdiHome} size="36" class="text-gray-500"></AIcon>
+    <AIcon path={mdiHome} size="36px" class="text-gray-500"></AIcon>
   </button>
   <div class="text-2xl font-bold my-4">Beginner Course</div>
   <button class="px-4 py-2 font-bold bg-white rounded shadow text-blue-500 my-4 flex items-center" onclick={() => goto('/profile/?uid=' + $userProfile.uid)}>

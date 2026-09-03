@@ -102,7 +102,7 @@
 <div class="w-screen min-h-screen bg-gray-100 p-4 md:px-16 md:py-8">
 
   <button onclick={() => goto('/home')}>
-    <AIcon path={mdiHome} size="36" class="text-gray-500" />
+    <AIcon path={mdiHome} size="36px" class="text-gray-500" />
   </button>
   <div class="flex items-center mt-4 mb-6">
     <div class="text-2xl font-bold">Order Events</div>
@@ -111,7 +111,7 @@
       class="bg-green-500 text-white font-bold px-3 py-1.5 rounded shadow flex items-center gap-1"
       onclick={openCreate}
     >
-      <AIcon path={mdiPlus} size="18" />New Event
+      <AIcon path={mdiPlus} size="18px" />New Event
     </button>
   </div>
 
@@ -173,14 +173,14 @@
           class="px-4 py-1.5 rounded border font-bold flex items-center gap-1"
           onclick={() => showModal = false}
         >
-          <AIcon path={mdiClose} size="18" />Cancel
+          <AIcon path={mdiClose} size="18px" />Cancel
         </button>
         <button
           class="px-4 py-1.5 rounded bg-blue-500 text-white font-bold flex items-center gap-1 disabled:opacity-50"
           onclick={save}
           disabled={saving || !form.title.trim() || !form.dueDate}
         >
-          <AIcon path={mdiCheck} size="18" />
+          <AIcon path={mdiCheck} size="18px" />
           {saving ? 'Saving...' : editId ? 'Save Changes' : 'Create'}
         </button>
       </div>
