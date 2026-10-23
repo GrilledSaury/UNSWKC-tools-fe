@@ -194,18 +194,17 @@
         <div class="chart short"><canvas data-chart="income"></canvas></div>
       </div>
       <div class="grow">
-        <h4 style="text-align:center;margin:0 0 4px;text-transform:none">Spending — $14,771</h4>
+        <h4 style="text-align:center;margin:0 0 4px;text-transform:none">Spending — $20,876</h4>
         <div class="chart short"><canvas data-chart="spending"></canvas></div>
       </div>
     </div>
     <div class="strip">
       <div class="cell">Club income<b>$25,398</b></div><div class="op">−</div>
-      <div class="cell">Club spending<b>$14,771</b></div><div class="op">=</div>
-      <div class="cell">Club surplus<b class="pos">+$10,627</b></div>
+      <div class="cell">Club spending<b>$20,876</b></div><div class="op">=</div>
+      <div class="cell">Club surplus<b class="pos">+$4,522</b></div>
     </div>
     <p class="small muted" style="text-align:center;margin-top:8px">
-      Excludes group events &amp; orders paid up front for members (−$6,105, mostly UniGames) → bank balance +$4,522.
-      Membership shown after NSWKA's share ($2,354).</p>
+      Same as the change in bank balance. Includes everything paid up front that members haven't paid back yet (UniGames, State Championship tickets, club gear). Membership shown after NSWKA's share ($2,354).</p>
   </section>
 
   <!-- ===================== 6.5 ===================== -->
@@ -252,15 +251,15 @@
   <section>
     <h2 class="st"><span class="num">6.6</span>Beginners Course</h2>
     <table>
-      <tr><th>Term</th><th class="r">Sign-ups</th><th class="r">Attendance</th><th class="r">Completed</th><th class="r">Joined Club</th><th class="r">Earnings</th></tr>
-      <tr><td>Term 1 2026</td><td class="r"><span class="ph">?</span></td><td class="r"><span class="ph">?</span></td><td class="r"><span class="ph">?</span></td><td class="r"><span class="ph">?</span></td><td class="r">$1,820.00</td></tr>
-      <tr><td>Term 2 2026</td><td class="r"><span class="ph">?</span></td><td class="r"><span class="ph">?</span></td><td class="r"><span class="ph">?</span></td><td class="r"><span class="ph">?</span></td><td class="r">$785.64</td></tr>
-      <tr><td>Term 3 2026</td><td class="r"><span class="ph">?</span></td><td class="r"><span class="ph">?</span></td><td class="r"><span class="ph">?</span></td><td class="r"><span class="ph">?</span></td><td class="r">$1,048.92</td></tr>
-      <tr class="total"><td>Total</td><td></td><td></td><td></td><td></td><td class="r">$3,654.56</td></tr>
+      <tr><th>Term</th><th class="r">Sign-ups</th><th class="r">Completed</th><th class="r">Joined Club</th><th class="r">Earnings</th></tr>
+      <tr><td>Term 1 2026</td><td class="r">42</td><td class="r">29</td><td class="r">8</td><td class="r">$1,820.00</td></tr>
+      <tr><td>Term 2 2026</td><td class="r">15</td><td class="r">11</td><td class="r">0</td><td class="r">$785.64</td></tr>
+      <tr><td>Term 3 2026</td><td class="r">21</td><td class="r">13</td><td class="r"><span class="ph">?</span></td><td class="r">$1,048.92</td></tr>
+      <tr class="total"><td>Total</td><td></td><td></td><td></td><td class="r">$3,654.56</td></tr>
     </table>
     <div class="row" style="margin-top:24px">
       <div class="grow box"><ul>
-        <li>Fee: <span class="ph">$__ per participant</span></li>
+        <li>Fee: $50 / $55 / $60 per participant (student / alumni / public)</li>
         <li>Paid <b>up front through Rubric</b> (payouts after Rubric fees)</li>
       </ul></div>
       <div class="grow box" style="text-align:center">
@@ -286,8 +285,8 @@
         <li>UniGames 2026: subsidy rate to be decided</li>
         <li>Socials: club covered ~$570 of the May social</li></ul></div>
       <div class="card"><h3>Group events paid up front</h3><ul>
-        <li>Club orders, jackets, shinai, gradings, State Championship tickets, UniGames</li>
-        <li>Paid from club funds first, tracked per person, paid back by members</li></ul></div>
+        <li>Club orders, jackets, shinai, gradings, State Championship tickets and UniGames are paid from club funds first and tracked per person.</li>
+        <li>Anything not yet paid back is counted in 6.4.</li></ul></div>
     </div>
   </section>
 
@@ -300,7 +299,7 @@
 <script>
 /* ---------- Data (edit here) ---------- */
 const C = { credit: '#3d7fc4', debit: '#e06666', grey: '#c9d1da', ink: '#1f2933' };
-const PIE = ['#1f3864', '#3d7fc4', '#7fb0e0', '#b9d3ee', '#e06666', '#f2a6a6', '#c9d1da'];
+const PIE = ['#1f3864', '#3d7fc4', '#7fb0e0', '#b9d3ee', '#e06666', '#f2a6a6', '#c9d1da', '#f6c26b', '#8e9aaf'];
 const money = v => '$' + Math.round(v).toLocaleString('en-AU');
 
 const CHARTS = {
@@ -345,8 +344,8 @@ const CHARTS = {
     [11057.50, 8634.28, 3654.56, 2051.65]),
 
   spending: () => pie(
-    ['Court hire', 'Club equipment', 'O-Week & beginners food', 'AKC subsidy', 'Socials (club share)', 'Other'],
-    [11782.47, 1175.00, 554.63, 400.00, 301.03, 557.93])
+    ['Court hire', 'UniGames 2026', 'Club equipment', 'State Champs tickets', 'O-Week & beginners food', 'AKC subsidy', 'Club gear (net)', 'Socials (club share)', 'Other'],
+    [11782.47, 5145.84, 1175.00, 570.00, 554.63, 400.00, 389.31, 301.03, 557.93])
 };
 
 function pie(labels, data) {
@@ -357,7 +356,7 @@ function pie(labels, data) {
     options: {
       cutout: '50%',
       plugins: {
-        legend: { position: 'right', labels: { font: { size: 15 }, boxWidth: 16 } },
+        legend: { position: 'right', labels: { font: { size: 13 }, boxWidth: 14 } },
         tooltip: { callbacks: { label: c => `${c.label}: ${money(c.raw)}` } },
         datalabels: { color: '#fff', font: { weight: 'bold', size: 15 },
           formatter: v => (v / total >= 0.05 ? Math.round(v / total * 100) + '%' : '') }
@@ -385,7 +384,16 @@ Reveal.initialize({
   width: 1280, height: 720, margin: 0.06,
   transition: 'slide',
   center: false
-}).then(() => drawCharts(Reveal.getCurrentSlide()));
+}).then(() => {
+  if (window.location.search.includes('print-pdf')) {
+    // Draw all slides at once for PDF export; delay lets the layout settle first
+    setTimeout(() => {
+      document.querySelectorAll('.reveal .slides section').forEach(drawCharts);
+    }, 500);
+  } else {
+    drawCharts(Reveal.getCurrentSlide());
+  }
+});
 Reveal.on('slidechanged', e => drawCharts(e.currentSlide));
 </script>
 </body>
