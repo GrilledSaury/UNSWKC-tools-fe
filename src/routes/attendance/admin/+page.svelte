@@ -237,6 +237,7 @@
     }))
 
     const win = window.open('', '_blank')
+    win.onload = () => win.print()
     win.document.write(`
       <!DOCTYPE html>
       <html>
@@ -262,7 +263,6 @@
       </html>`)
     win.document.close()
     win.focus()
-    win.print()
   }
 
   // ── Session attendance view ────────────────────────────────────────────────

@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UNSWKC AGM 2026 — Treasurer's Report</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reset.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/theme/white.css">
+
+<style>
+  :root {
+    --ink: #1f2933;
+    --muted: #6b7785;
+    --line: #c9d1da;
+    --credit: #3d7fc4;   /* blue, as last year */
+    --debit: #e06666;    /* red, as last year */
+    --accent: #1f3864;
+    --panel: #f4f7fb;
+    --good: #2e8b57;
+    --r-main-font: "Helvetica Neue", Arial, sans-serif;
+    --r-heading-font: "Helvetica Neue", Arial, sans-serif;
+    --r-main-color: var(--ink);
+    --r-heading-color: var(--ink);
+    --r-main-font-size: 26px;
+  }
+  .reveal .slides { text-align: left; }
+  .reveal .slides section { height: 100%; padding: 0; }
+
+  /* Slide header: numbered title + dotted rule, like last year's deck */
+  .reveal h2.st {
+    font-size: 40px; font-weight: 700; text-transform: none; margin: 0 0 22px;
+    padding-bottom: 14px; border-bottom: 3px dotted var(--line);
+  }
+  .reveal h2.st .num { color: var(--muted); margin-right: 12px; }
+
+  .row { display: flex; gap: 28px; align-items: stretch; }
+  .grow { flex: 1 1 auto; min-width: 0; }
+  .side { flex: 0 0 300px; font-size: 20px; }
+  .chart { position: relative; height: 470px; }
+  .chart.short { height: 380px; }
+
+  .box { background: var(--panel); border-radius: 10px; padding: 16px 20px; }
+  .box h4 { font-size: 20px; margin: 0 0 8px; text-transform: none; color: var(--accent); }
+  .box ul { margin: 0 0 0 20px; }
+  .box li { margin: 6px 0; line-height: 1.3; }
+  .box.debit h4 { color: var(--debit); }
+  .box.credit h4 { color: var(--credit); }
+  .big { font-size: 30px; font-weight: 700; }
+  .pos { color: var(--good); }
+  .neg { color: var(--debit); }
+  .muted { color: var(--muted); }
+  .small { font-size: 17px; }
+
+  /* Tables */
+  .reveal table { font-size: 21px; border-collapse: collapse; width: 100%; margin: 0; }
+  .reveal table th { background: var(--accent); color: #fff; font-weight: 600; padding: 9px 12px; border: none; }
+  .reveal table td { padding: 8px 12px; border-bottom: 1px solid #e3e8ee; }
+  .reveal table tr.total td { font-weight: 700; background: #dde6f3; border-bottom: none; }
+  .reveal table .r { text-align: right; font-variant-numeric: tabular-nums; }
+  .ph { background: #fff3b0; padding: 0 6px; border-radius: 4px; }
+
+  /* Agenda */
+  .agenda { font-size: 30px; line-height: 1.75; margin-left: 40px; }
+
+  /* Timeline (6.2) */
+  .timeline { display: grid; grid-template-columns: repeat(4, 1fr); gap: 48px 22px; margin-top: 30px; }
+  .tl { border-top: 5px solid var(--line); padding-top: 12px; font-size: 21px; }
+  .tl .when { font-weight: 700; font-size: 24px; margin-bottom: 10px; }
+  .tl .item { display: flex; justify-content: space-between; gap: 8px; margin: 8px 0; }
+  .tl .in::before  { content: "▲ "; color: var(--credit); }
+  .tl .out::before { content: "▼ "; color: var(--debit); }
+  .tl .amt { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  /* Summary strip (6.4) */
+  .strip { display: grid; grid-template-columns: repeat(5, auto); gap: 6px 18px; align-items: center;
+           justify-content: center; font-size: 22px; margin-top: 10px; }
+  .strip .op { font-size: 28px; color: var(--muted); }
+  .strip .cell { text-align: center; }
+  .strip .cell b { display: block; font-size: 28px; }
+
+  /* Cards (6.7) */
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .card { background: var(--panel); border-radius: 12px; padding: 18px 22px; font-size: 21px; }
+  .card h3 { font-size: 24px; text-transform: none; margin: 0 0 8px; color: var(--accent); }
+  .card ul { margin: 0 0 0 20px; }
+  .card li { margin: 5px 0; }
+
+  .title-slide h1 { font-size: 64px; text-transform: none; margin-bottom: 10px; }
+  .title-slide p { font-size: 28px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+  <!-- ===================== 6. Agenda ===================== -->
+  <section class="title-slide">
+    <h1>5. Treasurer's Report</h1>
+    <p>Matthew Qiao · 12 Nov 2025 – 23 Oct 2026</p>
+    <ol class="agenda">
+      <li>Overall Balance</li>
+      <li>Notable Cash In/Outflows</li>
+      <li>Monthly Breakdown</li>
+      <li>Where the Club's Money Came From &amp; Went</li>
+      <li>Membership</li>
+      <li>Beginners Course</li>
+      <li>Other Items</li>
+    </ol>
+  </section>
+
+  <!-- ===================== 6.1 ===================== -->
+  <section>
+    <h2 class="st"><span class="num">5.1</span>Overall Balance</h2>
+    <div class="row">
+      <div class="grow chart"><canvas data-chart="balance"></canvas></div>
+      <div class="side">
+        <div class="box">
+          <h4>Analysis</h4>
+          <ul>
+            <li>Highest bank balance in the last five years</li>
+            <li><span class="pos"><b>+$4,522</b></span> since the last AGM</li>
+            <li>UniGames 2026 paid up front. Members' share (a few thousand dollars) still to come in once the subsidy rate is decided</li>
+          </ul>
+        </div>
+        <p class="small muted" style="margin-top:12px">2021–23 balances approximate, from last year's reports.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 6.2 ===================== -->
+  <section>
+    <h2 class="st"><span class="num">5.2</span>Notable Cash In/Outflows</h2>
+    <div class="timeline">
+      <div class="tl"><div class="when">Nov 2025</div>
+        <div class="item"><span class="in">Bunnings BBQ #1</span><span class="amt">$1,085</span></div></div>
+      <div class="tl"><div class="when">Dec 2025</div>
+        <div class="item"><span class="in">Bunnings BBQ #2</span><span class="amt">$1,161</span></div>
+        <div class="item"><span class="in">Arc facility (Q3)</span><span class="amt">$1,535</span></div></div>
+      <div class="tl"><div class="when">Mar 2026</div>
+        <div class="item"><span class="in">T1 Beginners Course</span><span class="amt">$1,820</span></div>
+        <div class="item"><span class="in">Arc facility (Q4)</span><span class="amt">$1,238</span></div>
+        <div class="item"><span class="out">Bogu set (FB Marketplace)</span><span class="amt">$400</span></div></div>
+      <div class="tl"><div class="when">May 2026</div>
+        <div class="item"><span class="in">Arc annual funding</span><span class="amt">$2,750</span></div>
+        <div class="item"><span class="out">AKC subsidy</span><span class="amt">$400</span></div>
+        <div class="item"><span class="out">May social</span><span class="amt">$1,318</span></div></div>
+      <div class="tl"><div class="when">Jun 2026</div>
+        <div class="item"><span class="out">Bogu set (FB Marketplace)</span><span class="amt">$480</span></div></div>
+      <div class="tl"><div class="when">Jul 2026</div>
+        <div class="item"><span class="in">Membership renewals</span><span class="amt">$10,141</span></div></div>
+      <div class="tl"><div class="when">Aug 2026</div>
+        <div class="item"><span class="out">NSWKA registration</span><span class="amt">$2,354</span></div>
+        <div class="item"><span class="out">UniGames (up front)</span><span class="amt">$5,146</span></div></div>
+      <div class="tl"><div class="when">Sep 2026</div>
+        <div class="item"><span class="in">Arc facility (Q1 &amp; Q2)</span><span class="amt">$3,111</span></div></div>
+    </div>
+    <p class="small muted" style="margin-top:40px">UniGames spans Aug–Oct 2026 (accommodation, van, car hire, petrol, food). Club covered ~$570 of the May social.</p>
+  </section>
+
+  <!-- ===================== 6.3 ===================== -->
+  <section>
+    <h2 class="st"><span class="num">5.3</span>Monthly Breakdown <span class="muted" style="font-weight:400">(Nov 2025 – Oct 2026)</span></h2>
+    <div class="row">
+      <div class="grow chart"><canvas data-chart="monthly"></canvas></div>
+      <div class="side">
+        <div class="box" style="margin-bottom:14px">
+          <div>Total Credit: <b>$37,392</b></div>
+          <div>Total Debit: <b>−$32,870</b></div>
+          <div class="big pos">+$4,522</div>
+        </div>
+        <div class="box credit" style="margin-bottom:14px">
+          <h4>Credit</h4>
+          <ul><li>Highest: Jul 2026 ($10.2k) from membership renewals</li>
+              <li>Inflow &gt; outflow in 7 of 12 months</li></ul>
+        </div>
+        <div class="box debit">
+          <h4>Debit</h4>
+          <ul><li>Highest: Aug 2026 ($10.1k) for UniGames, NSWKA</li>
+              <li>Includes group events &amp; orders paid up front and paid back by members</li></ul>
+        </div>
+      </div>
+    </div>
+    <p class="small muted">Nov 2025 and Oct 2026 are partial months.</p>
+  </section>
+
+  <!-- ===================== 6.4 ===================== -->
+  <section>
+    <h2 class="st"><span class="num">5.4</span>Where the Club's Money Came From &amp; Went</h2>
+    <div class="row">
+      <div class="grow">
+        <h4 style="text-align:center;margin:0 0 4px;text-transform:none">Income — $25,398</h4>
+        <div class="chart short"><canvas data-chart="income"></canvas></div>
+      </div>
+      <div class="grow">
+        <h4 style="text-align:center;margin:0 0 4px;text-transform:none">Spending — $20,876</h4>
+        <div class="chart short"><canvas data-chart="spending"></canvas></div>
+      </div>
+    </div>
+    <div class="strip">
+      <div class="cell">Club income<b>$25,398</b></div><div class="op">−</div>
+      <div class="cell">Club spending<b>$20,876</b></div><div class="op">=</div>
+      <div class="cell">Club surplus<b class="pos">+$4,522</b></div>
+    </div>
+    <p class="small muted" style="text-align:center;margin-top:8px">
+      Same as the change in bank balance. Includes everything paid up front that members haven't paid back yet (UniGames, State Championship tickets, club gear). Membership shown after NSWKA's share ($2,354).</p>
+  </section>
+
+  <!-- ===================== 6.5 ===================== -->
+  <section>
+    <h2 class="st"><span class="num">5.5</span>Membership</h2>
+    <div class="row">
+      <div class="grow">
+        <table>
+          <tr><th>Tier</th><th>Price (club + NSWKA)</th><th class="r">Qty</th><th class="r">Revenue</th></tr>
+          <tr><td>Student</td><td>$410 ($303 + $107)</td><td class="r">19</td><td class="r">$7,028</td></tr>
+          <tr><td>Alumni</td><td>$430 ($323 + $107)</td><td class="r">9</td><td class="r">$3,656</td></tr>
+          <tr><td>Public</td><td>$450 ($343 + $107)</td><td class="r">4</td><td class="r">$1,479</td></tr>
+          <tr><td>Honorary</td><td>—</td><td class="r">1</td><td class="r">—</td></tr>
+          <tr class="total"><td>Total</td><td></td><td class="r">33</td><td class="r">$12,163</td></tr>
+        </table>
+        <table style="margin-top:18px">
+          <tr><th></th><th class="r">2025–26</th><th class="r">2026–27</th><th class="r">Change</th></tr>
+          <tr><td>Members</td><td class="r">46</td><td class="r">33</td><td class="r neg">−13</td></tr>
+          <tr><td>Renewal revenue</td><td class="r">$17,600</td><td class="r">$12,163</td><td class="r neg">−$5,437</td></tr>
+          <tr><td>Fees (S / A / P)</td><td class="r">$380 / 400 / 420</td><td class="r">$410 / 430 / 450</td><td class="r">+$30</td></tr>
+        </table>
+      </div>
+      <div class="side">
+        <div class="box" style="margin-bottom:14px">
+          <ul>
+            <li>+$30 per tier: club +$23, NSWKA +$7</li>
+            <li>9 members paid NSWKA themselves → club portion only</li>
+            <li>Mid-year joiners (T1–T2, pro-rated): $1,139</li>
+          </ul>
+        </div>
+        <div class="box">
+          <h4>Key point</h4>
+          <ul>
+            <li>Membership after NSWKA ≈ <b>$11,060</b></li>
+            <li>Court hire now ≈ <b>$1,150/month</b> (≈ $13,800/yr)</li>
+            <li>Arc funding, beginners courses &amp; fundraising make up the difference</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 6.6 ===================== -->
+  <section>
+    <h2 class="st"><span class="num">5.6</span>Beginners Course</h2>
+    <table>
+      <tr><th>Term</th><th class="r">Sign-ups</th><th class="r">Completed</th><th class="r">Joined Club</th><th class="r">Earnings</th></tr>
+      <tr><td>Term 1 2026</td><td class="r">42</td><td class="r">29</td><td class="r">8</td><td class="r">$1,820.00</td></tr>
+      <tr><td>Term 2 2026</td><td class="r">15</td><td class="r">11</td><td class="r">0</td><td class="r">$785.64</td></tr>
+      <tr><td>Term 3 2026</td><td class="r">21</td><td class="r">13</td><td class="r"><span class="ph">?</span></td><td class="r">$1,048.92</td></tr>
+      <tr class="total"><td>Total</td><td></td><td></td><td></td><td class="r">$3,654.56</td></tr>
+    </table>
+    <div class="row" style="margin-top:24px">
+      <div class="grow box"><ul>
+        <li>Fee: $50 / $55 / $60 per participant (student / alumni / public)</li>
+        <li>Paid <b>up front through Rubric</b> (payouts after Rubric fees)</li>
+      </ul></div>
+      <div class="grow box" style="text-align:center">
+        <div class="muted">Earnings vs last year</div>
+        <div class="big">$2,800 → $3,655 <span class="pos">(+31%)</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 6.7 ===================== -->
+  <section>
+    <h2 class="st"><span class="num">5.7</span>Other Items</h2>
+    <div class="cards">
+      <div class="card"><h3>Fundraising</h3><ul>
+        <li>2 × Bunnings BBQ Lidcombe (Nov &amp; Dec 2025)</li>
+        <li>Raised $2,246 → <b>$2,052 net</b></li>
+        <li class="muted">Last year (Eastgardens): $1,996</li></ul></div>
+      <div class="card"><h3>Equipment</h3><ul>
+        <li>2 second-hand bogu sets from Facebook Marketplace ($400, $480)</li>
+        <li>GoPro ($260), lockbox ($35)</li></ul></div>
+      <div class="card"><h3>Supporting our members</h3><ul>
+        <li>AKC 2026 subsidy: $400</li>
+        <li>UniGames 2026: subsidy rate to be decided</li>
+        <li>Socials: club covered ~$570 of the May social</li></ul></div>
+      <div class="card"><h3>Group events paid up front</h3><ul>
+        <li>Club orders, jackets, shinai, gradings, State Championship tickets and UniGames are paid from club funds first and tracked per person.</li>
+        <li>Anything not yet paid back is counted in 5.4.</li></ul></div>
+    </div>
+  </section>
+
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2/dist/chartjs-plugin-datalabels.min.js"></script>
+<script>
+/* ---------- Data (edit here) ---------- */
+const C = { credit: '#3d7fc4', debit: '#e06666', grey: '#c9d1da', ink: '#1f2933' };
+const PIE = ['#1f3864', '#3d7fc4', '#7fb0e0', '#b9d3ee', '#e06666', '#f2a6a6', '#c9d1da', '#f6c26b', '#8e9aaf'];
+const money = v => '$' + Math.round(v).toLocaleString('en-AU');
+
+const CHARTS = {
+  balance: () => ({
+    type: 'bar',
+    data: {
+      labels: ['2021–22', '2022–23', '2023–24', '2024–25', '2025–26'],
+      datasets: [{ data: [73000, 79000, 65067, 82343, 86865],
+        backgroundColor: [C.grey, C.grey, C.grey, C.grey, C.credit], borderRadius: 4 }]
+    },
+    options: {
+      plugins: { legend: { display: false },
+        datalabels: { anchor: 'end', align: 'end', formatter: (v, ctx) => ctx.dataIndex < 2 ? '~' + money(v) : money(v),
+                      font: { weight: 'bold', size: 18 }, color: C.ink } },
+      scales: { y: { min: 30000, max: 100000, ticks: { callback: money, font: { size: 16 } } },
+                x: { ticks: { font: { size: 18 } }, grid: { display: false } } }
+    }
+  }),
+
+  monthly: () => ({
+    type: 'bar',
+    data: {
+      labels: ['Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'],
+      datasets: [
+        { label: 'Debit (−)',  backgroundColor: C.debit,
+          data: [861.47, 1370.25, 194.45, 1414.70, 2540.20, 4000.00, 4817.75, 1886.55, 1315.70, 10089.82, 2390.57, 1989.01] },
+        { label: 'Credit (+)', backgroundColor: C.credit,
+          data: [1358.35, 2735.23, 0, 10.00, 3747.50, 2497.36, 6083.41, 3047.58, 10180.75, 2738.15, 4595.86, 398.06] }
+      ]
+    },
+    options: {
+      plugins: { legend: { position: 'top', labels: { font: { size: 18 } } }, datalabels: { display: false },
+                 tooltip: { callbacks: { label: c => `${c.dataset.label}: ${money(c.raw)}` } } },
+      scales: { y: { ticks: { callback: money, font: { size: 16 } } },
+                x: { grid: { display: false }, ticks: { font: { size: 16 },
+                     callback: function (v, i) { return i === 0 ? ['Nov', '2025'] : i === 2 ? ['Jan', '2026'] : this.getLabelForValue(v); } } } }
+    }
+  }),
+
+  income: () => pie(
+    ['Membership (after NSWKA)', 'Arc Sport grants', 'Beginners course', 'Fundraising (net)'],
+    [11057.50, 8634.28, 3654.56, 2051.65]),
+
+  spending: () => pie(
+    ['Court hire', 'UniGames 2026', 'Club equipment', 'State Champs tickets', 'O-Week & beginners food', 'AKC subsidy', 'Club gear (net)', 'Socials (club share)', 'Other'],
+    [11782.47, 5145.84, 1175.00, 570.00, 554.63, 400.00, 389.31, 301.03, 557.93])
+};
+
+function pie(labels, data) {
+  const total = data.reduce((a, b) => a + b, 0);
+  return {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data, backgroundColor: PIE, borderColor: '#fff', borderWidth: 2 }] },
+    options: {
+      cutout: '50%',
+      plugins: {
+        legend: { position: 'right', labels: { font: { size: 13 }, boxWidth: 14 } },
+        tooltip: { callbacks: { label: c => `${c.label}: ${money(c.raw)}` } },
+        datalabels: { color: '#fff', font: { weight: 'bold', size: 15 },
+          formatter: v => (v / total >= 0.05 ? Math.round(v / total * 100) + '%' : '') }
+      }
+    }
+  };
+}
+
+/* ---------- Chart lifecycle: build on slide entry so each chart animates in ---------- */
+Chart.register(ChartDataLabels);
+Chart.defaults.font.family = '"Helvetica Neue", Arial, sans-serif';
+Chart.defaults.color = C.ink;
+Chart.defaults.maintainAspectRatio = false;
+
+const live = new Map();
+function drawCharts(slide) {
+  slide.querySelectorAll('canvas[data-chart]').forEach(cv => {
+    live.get(cv)?.destroy();
+    live.set(cv, new Chart(cv, CHARTS[cv.dataset.chart]()));
+  });
+}
+
+Reveal.initialize({
+  hash: true,
+  width: 1280, height: 720, margin: 0.06,
+  transition: 'slide',
+  center: false
+}).then(() => {
+  if (window.location.search.includes('print-pdf')) {
+    // Draw all slides at once for PDF export; delay lets the layout settle first
+    setTimeout(() => {
+      document.querySelectorAll('.reveal .slides section').forEach(drawCharts);
+    }, 500);
+  } else {
+    drawCharts(Reveal.getCurrentSlide());
+  }
+});
+Reveal.on('slidechanged', e => drawCharts(e.currentSlide));
+</script>
+</body>
+</html>
