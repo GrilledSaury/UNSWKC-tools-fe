@@ -237,6 +237,7 @@
     }))
 
     const win = window.open('', '_blank')
+    win.onload = () => win.print()
     win.document.write(`
       <!DOCTYPE html>
       <html>
@@ -259,7 +260,6 @@
         </style>
       </head>
       <body>${pages.join('')}</body>
-      <script>window.onload = () => window.print()</script>
       </html>`)
     win.document.close()
     win.focus()
