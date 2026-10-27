@@ -259,10 +259,10 @@
         </style>
       </head>
       <body>${pages.join('')}</body>
+      <script>window.onload = () => window.print()</script>
       </html>`)
     win.document.close()
     win.focus()
-    win.print()
   }
 
   // ── Session attendance view ────────────────────────────────────────────────
