@@ -3,7 +3,7 @@
   import { db } from '$lib/firebase'
   import { collection, getDocs, query, where, orderBy, Timestamp } from 'firebase/firestore'
   import { AIcon } from 'ace.svelte'
-  import { mdiHome, mdiChevronLeft, mdiChevronRight } from '@mdi/js'
+  import { mdiHome, mdiChevronLeft, mdiChevronRight, mdiRss, mdiContentCopy, mdiCheck } from '@mdi/js'
   import { goto } from '$app/navigation'
   import { userProfile } from '$lib/stores'
 
@@ -26,10 +26,21 @@
   const now = new Date()
   const todayKey = dateKey(now)
 
-  let selectedYear  = $state(now.getFullYear())
-  let selectedMonth = $state(now.getMonth())
-  let sessionMap    = $state({})
-  let loading       = $state(true)
+  let selectedYear   = $state(now.getFullYear())
+  let selectedMonth  = $state(now.getMonth())
+  let sessionMap     = $state({})
+  let loading        = $state(true)
+  let showSubscribe  = $state(false)
+  let copied         = $state(false)
+
+  function icsUrl()    { return window.location.origin + '/api/calendar.ics' }
+  function webcalUrl() { return icsUrl().replace(/^https?/, 'webcal') }
+
+  async function copyIcsUrl() {
+    await navigator.clipboard.writeText(icsUrl())
+    copied = true
+    setTimeout(() => copied = false, 2000)
+  }
 
   function dateKey(d) {
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
@@ -104,6 +115,38 @@
 
   <div class="flex items-center gap-2 mt-4 mb-4">
     <div class="text-2xl font-bold grow">Training Schedule</div>
+    <div class="relative">
+      <button
+        class="flex items-center gap-1.5 text-sm font-semibold text-gray-500 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-200 transition-colors"
+        onclick={() => showSubscribe = !showSubscribe}
+      >
+        <AIcon path={mdiRss} size="18px" />Subscribe
+      </button>
+      {#if showSubscribe}
+        <div class="absolute right-0 top-full mt-1 bg-white rounded shadow-lg border p-3 z-30 w-72">
+          <div class="text-xs font-bold text-gray-500 mb-2">Calendar Subscription</div>
+          <a
+            href={webcalUrl()}
+            class="block w-full text-center bg-blue-500 hover:bg-blue-600 text-white font-bold text-sm px-3 py-1.5 rounded mb-2 transition-colors"
+          >Open in Calendar App</a>
+          <div class="flex items-center gap-1">
+            <input
+              readonly
+              class="border rounded px-2 py-1 text-xs text-gray-500 bg-gray-50 grow min-w-0 font-mono"
+              value={icsUrl()}
+            />
+            <button
+              class="shrink-0 p-1.5 rounded border hover:bg-gray-50 transition-colors text-gray-500"
+              onclick={copyIcsUrl}
+              title="Copy URL"
+            >
+              <AIcon path={copied ? mdiCheck : mdiContentCopy} size="16px" class={copied ? 'text-green-500' : ''} />
+            </button>
+          </div>
+          <p class="text-xs text-gray-400 mt-1.5">Paste the URL into Google Calendar → "Add by URL"</p>
+        </div>
+      {/if}
+    </div>
     <button class="text-gray-500 disabled:opacity-30 p-1" onclick={prevMonth} disabled={loading}>
       <AIcon path={mdiChevronLeft} size="24px" />
     </button>

@@ -13,5 +13,6 @@ package-lock.json
 pnpm-lock.yaml
 dist
 .firebase
+*-debug.log
 scripts/
 attendance-*.csv
