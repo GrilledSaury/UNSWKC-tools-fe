@@ -15,6 +15,7 @@
   import { userProfile } from '$lib/stores'
   import Swal from 'sweetalert2'
   import QRCode from 'qrcode'
+  import { jsPDF } from 'jspdf'
 
   const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December']
   const DAY_ABBR    = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
@@ -222,47 +223,40 @@
   }
 
   async function printBook() {
-    const pages = await Promise.all(sessions.map(async session => {
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+    const W = 210, H = 297
+    const qrSize = 160
+    const qrX = (W - qrSize) / 2
+    const qrY = (H - qrSize) / 2 - 15
+
+    for (let i = 0; i < sessions.length; i++) {
+      const session = sessions[i]
+      if (i > 0) pdf.addPage()
+
       const url     = `${window.location.origin}/attend?s=${session.id}&p=${session.passcode}`
-      const dataUrl = await QRCode.toDataURL(url, { width: 800, margin: 2 })
+      const dataUrl = await QRCode.toDataURL(url, { width: 800, margin: 1 })
       const label   = fmtDate(session.start)
       const time    = `${fmtTime(session.start)} – ${fmtTime(session.end)}`
-      return `
-        <div class="page">
-          <div class="label">${label}</div>
-          <div class="time">${time}</div>
-          <img src="${dataUrl}" />
-          <div class="hint">Scan to mark attendance</div>
-        </div>`
-    }))
 
-    const win = window.open('', '_blank')
-    win.onload = () => win.print()
-    win.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Attendance QR — ${MONTH_NAMES[selectedMonth]} ${selectedYear}</title>
-        <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: sans-serif; }
-          .page {
-            width: 100vw; height: 100vh;
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            page-break-after: always;
-          }
-          .label { font-size: 2rem; font-weight: bold; margin-bottom: 0.5rem; }
-          .time  { font-size: 1.2rem; color: #555; margin-bottom: 2rem; }
-          img    { width: min(80vw, 80vh); height: min(80vw, 80vh); }
-          .hint  { font-size: 1rem; color: #888; margin-top: 1.5rem; }
-          @media print { .page { page-break-after: always; } }
-        </style>
-      </head>
-      <body>${pages.join('')}</body>
-      </html>`)
-    win.document.close()
-    win.focus()
+      pdf.setFont('helvetica', 'bold')
+      pdf.setFontSize(20)
+      pdf.text(label, W / 2, qrY - 20, { align: 'center' })
+
+      pdf.setFont('helvetica', 'normal')
+      pdf.setFontSize(14)
+      pdf.setTextColor(100)
+      pdf.text(time, W / 2, qrY - 10, { align: 'center' })
+      pdf.setTextColor(0)
+
+      pdf.addImage(dataUrl, 'PNG', qrX, qrY, qrSize, qrSize)
+
+      pdf.setFontSize(11)
+      pdf.setTextColor(150)
+      pdf.text('Scan to mark attendance', W / 2, qrY + qrSize + 10, { align: 'center' })
+      pdf.setTextColor(0)
+    }
+
+    pdf.save(`QR-${MONTH_NAMES[selectedMonth]}-${selectedYear}.pdf`)
   }
 
   // ── Session attendance view ────────────────────────────────────────────────

@@ -11,6 +11,8 @@
   import { userProfile } from '$lib/stores'
   import Swal from 'sweetalert2'
   import EventList from '$lib/components/EventList.svelte'
+  import { marked } from 'marked'
+  marked.use({ breaks: true, gfm: true })
 
   let events  = $state([])
   let loading = $state(true)
@@ -19,6 +21,7 @@
   let showModal = $state(false)
   let editId    = $state(null)
   let form      = $state({ title: '', description: '', dueDate: '', status: 'open' })
+  let descTab   = $state('write')
 
   async function load() {
     const snap = await getDocs(query(collection(db, 'events'), orderBy('dueDate', 'asc')))
@@ -31,19 +34,21 @@
   }
 
   function openCreate() {
-    editId = null
-    form   = { title: '', description: '', dueDate: '', status: 'open' }
+    editId  = null
+    form    = { title: '', description: '', dueDate: '', status: 'open' }
+    descTab = 'write'
     showModal = true
   }
 
   function openEdit(ev) {
-    editId = ev.id
-    form   = {
+    editId  = ev.id
+    form    = {
       title:       ev.title       ?? '',
       description: ev.description ?? '',
       dueDate:     ev.dueDate ? ev.dueDate.toDate().toISOString().slice(0, 10) : '',
       status:      ev.status      ?? 'open',
     }
+    descTab = 'write'
     showModal = true
   }
 
@@ -147,15 +152,26 @@
             placeholder="e.g. 2026 Term 2 Club Order"
           />
         </label>
-        <label class="flex flex-col">
-          <span class="font-bold text-sm mb-1">Description</span>
-          <textarea
-            bind:value={form.description}
-            rows="3"
-            class="border rounded px-2 py-1.5 resize-none"
-            placeholder="Optional details…"
-          ></textarea>
-        </label>
+        <div class="flex flex-col">
+          <div class="flex items-center justify-between mb-1">
+            <span class="font-bold text-sm">Description</span>
+            <div class="flex text-xs border rounded overflow-hidden">
+              <button type="button" class="px-2.5 py-0.5 {descTab === 'write' ? 'bg-gray-800 text-white' : 'text-gray-500 hover:bg-gray-50'}" onclick={() => descTab = 'write'}>Write</button>
+              <button type="button" class="px-2.5 py-0.5 border-l {descTab === 'preview' ? 'bg-gray-800 text-white' : 'text-gray-500 hover:bg-gray-50'}" onclick={() => descTab = 'preview'}>Preview</button>
+            </div>
+          </div>
+          {#if descTab === 'write'}
+            <textarea bind:value={form.description} rows="5" class="border rounded px-2 py-1.5 resize-none font-mono text-sm" placeholder="Optional details… (markdown supported)"></textarea>
+          {:else}
+            <div class="border rounded px-3 py-2 min-h-24 max-h-48 overflow-y-auto text-sm md-desc text-gray-700">
+              {#if form.description.trim()}
+                {@html marked.parse(form.description)}
+              {:else}
+                <span class="text-gray-300 italic">Nothing to preview</span>
+              {/if}
+            </div>
+          {/if}
+        </div>
         <label class="flex flex-col">
           <span class="font-bold text-sm mb-1">Due Date <span class="text-red-400">*</span></span>
           <input type="date" bind:value={form.dueDate} class="border rounded px-2 py-1.5" />

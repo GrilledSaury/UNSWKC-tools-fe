@@ -20,3 +20,8 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_UNSWKC_TOOLS }}
           channelId: live
           projectId: unswkc-tools
+      - uses: w9jds/firebase-action@master
+        with:
+          args: deploy --only firestore:rules
+        env:
+          GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_UNSWKC_TOOLS }}

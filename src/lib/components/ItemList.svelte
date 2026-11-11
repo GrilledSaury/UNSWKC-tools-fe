@@ -1,6 +1,8 @@
 <script>
   import { AIcon } from 'ace.svelte'
   import { mdiPlus, mdiPencil, mdiDelete, mdiCheck, mdiClose, mdiOpenInNew } from '@mdi/js'
+  import { marked } from 'marked'
+  marked.use({ breaks: true, gfm: true })
 
   let {
     items           = [],
@@ -17,16 +19,19 @@
   let showModal  = $state(false)
   let editIndex  = $state(null)   // null = add, number = edit
   let form       = $state({ name: '', url: '', description: '' })
+  let descTab    = $state('write')
 
   function openAdd() {
     editIndex = null
     form = { name: '', url: '', description: '' }
+    descTab = 'write'
     showModal = true
   }
 
   function openEdit(i) {
     editIndex = i
     form = { name: items[i].name, url: items[i].url ?? '', description: items[i].description ?? '' }
+    descTab = 'write'
     showModal = true
   }
 
@@ -72,6 +77,7 @@
   const total = $derived(
     items.reduce((sum, _, i) => sum + Number(itemPrices[i] ?? 0), 0)
   )
+
 </script>
 
 <div>
@@ -97,7 +103,7 @@
               </a>
             {/if}
             {#if item.description}
-              <div class="text-xs text-gray-400 mt-0.5">{item.description}</div>
+              <div class="text-xs text-gray-400 mt-0.5 md-desc">{@html marked.parse(item.description)}</div>
             {/if}
           </div>
           <!-- Price -->
@@ -170,10 +176,26 @@
           <span class="font-bold text-sm mb-1">URL {#if urlRequired}<span class="text-red-400">*</span>{:else}<span class="text-gray-400 font-normal">(optional)</span>{/if}</span>
           <input bind:value={form.url} class="border rounded px-2 py-1.5" placeholder="e.g. https://tozandoshop.com/collections/shinai-bags/products/kanmuri-shinai-bag" />
         </label>
-        <label class="flex flex-col">
-          <span class="font-bold text-sm mb-1">Description <span class="text-gray-400 font-normal">(optional)</span></span>
-          <textarea bind:value={form.description} rows="3" class="border rounded px-2 py-1.5 resize-none min-h-48" placeholder="Size, colour, notes…"></textarea>
-        </label>
+        <div class="flex flex-col">
+          <div class="flex items-center justify-between mb-1">
+            <span class="font-bold text-sm">Description <span class="text-gray-400 font-normal">(optional)</span></span>
+            <div class="flex text-xs border rounded overflow-hidden">
+              <button type="button" class="px-2.5 py-0.5 {descTab === 'write' ? 'bg-gray-800 text-white' : 'text-gray-500 hover:bg-gray-50'}" onclick={() => descTab = 'write'}>Write</button>
+              <button type="button" class="px-2.5 py-0.5 border-l {descTab === 'preview' ? 'bg-gray-800 text-white' : 'text-gray-500 hover:bg-gray-50'}" onclick={() => descTab = 'preview'}>Preview</button>
+            </div>
+          </div>
+          {#if descTab === 'write'}
+            <textarea bind:value={form.description} rows="5" class="border rounded px-2 py-1.5 resize-none font-mono text-sm" placeholder="Size, colour, notes… (markdown supported)"></textarea>
+          {:else}
+            <div class="border rounded px-3 py-2 min-h-24 max-h-48 overflow-y-auto text-sm md-desc text-gray-700">
+              {#if form.description.trim()}
+                {@html marked.parse(form.description)}
+              {:else}
+                <span class="text-gray-300 italic">Nothing to preview</span>
+              {/if}
+            </div>
+          {/if}
+        </div>
       </div>
       <div class="p-4 border-t flex justify-end gap-2">
         <button
@@ -193,3 +215,4 @@
     </div>
   </div>
 {/if}
+

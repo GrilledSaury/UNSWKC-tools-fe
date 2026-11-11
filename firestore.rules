@@ -1,0 +1,122 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+  	function hasPermission(perm) {
+      return get(/databases/$(database)/documents/user/$(request.auth.uid)).data.permissions.hasAny([perm]);
+    }
+
+    match /user/{userId} {
+      allow read: if request.auth.uid == userId
+      						|| hasPermission('profile');
+      // Allow creation if the current user owns the new document
+      allow create: if (request.auth.uid == userId
+                    && request.resource.data.permissions is list
+                    && request.resource.data.permissions.size() == 0)
+                    || hasPermission('profile');
+    	allow update: if (request.auth.uid == userId
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'phone', 'email2']))
+                    || hasPermission('profile');
+    }
+
+    match /beginner/{userId} {
+      allow read: if request.auth.uid == userId
+                  || hasPermission('beginner');
+      allow create: if (request.auth.uid == userId
+                    && request.resource.data.activated == false
+                    && request.resource.data.progress == [false, false, false, false])
+                    || hasPermission('beginner');
+      allow update: if (request.auth.uid == userId
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['join', 'filePath']))
+                    || hasPermission('beginner');
+    }
+
+    match /config/beginner {
+      allow read: if request.auth != null;
+      allow write: if hasPermission('beginner');
+    }
+
+    match /config/attendance {
+      allow read: if hasPermission('attendance');
+      allow write: if hasPermission('attendance');
+    }
+
+    match /bogu/{id} {
+      allow read: if request.auth != null;
+      allow write: if hasPermission('bogu');
+    }
+
+    match /session/{sessionId} {
+      allow read: if request.auth != null;
+      allow write: if hasPermission('attendance');
+    }
+
+    match /attendance/{userId}/sessions/{sessionId} {
+      allow read: if request.auth.uid == userId
+               || hasPermission('attendance')
+               || hasPermission('bogu');
+      allow create: if (request.auth.uid == userId && validAttendance(sessionId, request.resource.data.p))
+             || hasPermission('attendance');
+    }
+
+    match /sessionSecret/{sessionId} {
+      allow read: if hasPermission('attendance');
+      allow write: if hasPermission('attendance');
+    }
+
+    function validAttendance(sessionId, token) {
+      let s   = get(/databases/$(database)/documents/session/$(sessionId));
+      let sec = get(/databases/$(database)/documents/sessionSecret/$(sessionId));
+      return s.data.start <= request.time
+          && s.data.end   >= request.time
+          && sec.data.passcode == token;
+    }
+
+    match /membership/{userId} {
+      allow read: if request.auth.uid == userId
+                  || hasPermission('membership')
+                  || hasPermission('profile')
+                  || hasPermission('attendance');
+      allow write: if hasPermission('membership');
+    }
+
+		// ── Orders ────────────────────────────────────────────────────────────────
+
+    match /events/{eventId} {
+      allow read: if request.auth != null;
+      allow write: if hasPermission('orders');
+
+      match /orders/{userId} {
+        allow read: if request.auth.uid == userId || hasPermission('orders');
+
+        // User creates their own order — must start unlocked, pending, no admin fields
+        allow create: if request.auth.uid == userId
+                      && request.resource.data.locked == false
+                      && request.resource.data.status == 'pending'
+                      && !('itemPrices' in request.resource.data)
+                      && !('invoice'    in request.resource.data)
+                      && !('payment'    in request.resource.data);
+
+        allow update: if hasPermission('orders') || (
+          request.auth.uid == userId && (
+            // Edit items while unlocked
+            (!resource.data.locked
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['items', 'updatedAt']))
+            ||
+            // Lock order (false → true only)
+            (resource.data.locked == false
+              && request.resource.data.locked == true
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['locked', 'updatedAt']))
+            ||
+            // Upload payment receipt (only when invoice is ready)
+            (resource.data.status == 'awaiting_payment'
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['payment', 'updatedAt']))
+          )
+        );
+
+        allow delete: if hasPermission('orders');
+      }
+    }
+  }
+}

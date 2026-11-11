@@ -14,6 +14,8 @@ Internal management app for UNSW Kendo Club. Built with SvelteKit 5 + Firebase.
 | Deployment | Static adapter (`adapter-static`) |
 | Icons | Material Design Icons (`@mdi/js`) via `ace.svelte` |
 | QR | `qrcode` (generation), `@zxing/library` (scanning) |
+| PDF | `jspdf` (QR print book, invoice generation) |
+| Markdown | `marked` (event/item descriptions) |
 | Dialogs | SweetAlert2 |
 
 ---
@@ -54,7 +56,10 @@ Each user doc has a `permissions: string[]` field. Pages check this array to gra
 |---|---|
 | `beginner` | Beginners' Admin (`/beginner/admin`) |
 | `profile` | Users' Admin (`/profile/admin`) |
+| `membership` | Edit membership expiry on profile pages |
 | `attendance` | Attendance admin (`/attendance/admin`) |
+| `orders` | Orders admin (`/orders/admin`) |
+| `invoice` | Invoice Generator (`/invoice/admin`) |
 | `bogu` | Bogu Log (`/bogu/admin`) |
 
 Permissions are managed manually in the Firebase console. Every permission is explicit.
@@ -76,6 +81,15 @@ User profile, created on first sign-in.
 }
 ```
 
+### `membership/{uid}`
+Membership record, one per user. Managed by users with the `membership` permission via the profile page.
+```
+{
+  expiresAt: timestamp,
+  updatedAt: timestamp
+}
+```
+
 ### `beginner/{uid}`
 Beginner course enrolment record, one per user.
 ```
@@ -92,7 +106,7 @@ Editable content for the beginner course page. Managed via the admin modal.
 ```
 {
   title: string,    // checkbox label
-  content: string   // course description (plain text, rendered with whitespace-pre-wrap)
+  content: string   // course description (markdown supported)
 }
 ```
 
@@ -101,7 +115,7 @@ One document per check-in. `sessionId` is `YYYY-MM-DD-DayAbbr` (e.g. `2026-04-06
 ```
 {
   t: timestamp,   // server-side check-in time
-  p: string       // passcode echoed from the QR code (retained for audit)
+  p: string       // passcode echoed from the QR code ('manual' for admin-added entries)
 }
 ```
 
@@ -129,6 +143,34 @@ Passcode for each session. Same key as `session`. Readable only by users with `a
 }
 ```
 
+### `events/{eventId}`
+One document per club order event.
+```
+{
+  title: string,
+  description: string,   // markdown
+  dueDate: timestamp,
+  status: 'open' | 'closed',
+  createdAt: timestamp,
+  updatedAt?: timestamp
+}
+```
+
+### `events/{eventId}/orders/{uid}`
+One order per user per event.
+```
+{
+  items: [{ name: string, url: string, description: string }],
+  itemPrices?: { [index: number]: number | null },
+  status: 'pending' | 'rejected' | 'confirmed' | 'ordered' | 'awaiting_payment' | 'closed',
+  locked: boolean,
+  payment?: string,    // Firebase Storage URL of payment receipt
+  invoice?: string,    // Firebase Storage URL of invoice PDF
+  createdAt: timestamp,
+  updatedAt: timestamp
+}
+```
+
 ### `bogu/{id}`
 One document per borrowing record (auto-ID).
 ```
@@ -153,16 +195,22 @@ One document per borrowing record (auto-ID).
 ## Routes
 
 ```
-/                         Login (Google sign-in)
-/home                     App launcher (permission-filtered cards)
-/profile/?uid=<uid>       View / edit a user profile
-/profile/admin            List all users  [permission: profile]
-/beginner                 Beginner course enrolment for members
-/beginner/admin           Manage enrolments, edit course content  [permission: beginner]
-/beginner/admin/scan      QR code scanner for session entry  [permission: beginner]
-/attendance/admin         Session management, QR generation  [permission: attendance]
-/attend?s=<id>&p=<code>   QR scan landing page — members mark their own attendance
-/bogu/admin               Bogu borrowing log  [permission: bogu]
+/                              Login (Google sign-in)
+/home                          App launcher (permission-filtered cards)
+/profile/?uid=<uid>            View / edit a user profile
+/profile/admin                 List all users  [permission: profile]
+/beginner                      Beginner course enrolment for members
+/beginner/admin                Manage enrolments, edit course content  [permission: beginner]
+/beginner/admin/scan           QR code scanner for session entry  [permission: beginner]
+/attendance/admin              Session management, QR generation  [permission: attendance]
+/attendance/admin/dashboard    Live attendance view for today's session  [permission: attendance]
+/attend?s=<id>&p=<code>        QR scan landing page — members mark their own attendance
+/orders                        List of open order events (all authenticated users)
+/orders/[eventId]              Member order page — add items, lock and submit
+/orders/admin                  Manage order events  [permission: orders]
+/orders/admin/[eventId]        Review all orders for an event  [permission: orders]
+/invoice/admin                 Invoice generator with CSV import  [permission: invoice]
+/bogu/admin                    Bogu borrowing log  [permission: bogu]
 ```
 
 ---
@@ -170,7 +218,7 @@ One document per borrowing record (auto-ID).
 ## Apps
 
 ### Beginner Course (`/beginner`)
-Members confirm interest, upload a payment receipt, and (once activated) display a QR entry pass. Course description and checkbox label are editable by admins via `config/beginner`.
+Members confirm interest, upload a payment receipt, and (once activated) display a QR entry pass. Course description and checkbox label are editable by admins via `config/beginner`. Description supports markdown.
 
 ### Beginners' Admin (`/beginner/admin`)
 - View all enrolments with per-session progress
@@ -180,23 +228,44 @@ Members confirm interest, upload a payment receipt, and (once activated) display
 - Edit course description and checkbox label
 
 ### Users' Admin (`/profile/admin`)
-Lists all registered users and links to their profile pages.
+Lists all registered users with membership status indicators, and links to their profile pages.
 
-### Attendance admin (`/attendance/admin`)
+### Profile (`/profile`)
+View and edit a user profile. Users with the `membership` permission can set or remove a membership expiry date.
+
+### Attendance Admin (`/attendance/admin`)
 - Set a secret salt (`config/attendance`). All QR passcodes are derived from it via `SHA-256(salt + sessionId).slice(0, 8)`. Regenerating the salt invalidates all existing QR codes.
 - Month picker loads sessions from Firestore
 - "Generate Standard" creates all Mon/Wed/Fri sessions for the month (idempotent). Default windows: Mon/Wed 19:00–22:00, Fri 19:30–22:00
 - "Add Custom" — any date and time window
 - Each session card shows its passcode, a QR modal (with download), and a people icon to view attendance
 - Sessions can be deleted individually
+- "Print Book" generates a PDF (via jsPDF) with one QR code per page, labelled with date and time
 - Attendance view: lists all users sorted by check-in time; absent members shown below. Admins can manually mark a member as attended — opens a confirmation with a time picker. Manual entries are stored with `p: 'manual'` to distinguish them from QR scans. Attendance can only be added, not removed.
 
-### Attendance scan (`/attend`)
+### Attendance Dashboard (`/attendance/admin/dashboard`)
+Live view of today's session attendees. Auto-refreshes every 30 seconds with an animated countdown ring. Shows a fullscreen mode for display on a TV or large screen.
+
+### Attendance Scan (`/attend`)
 - Target of the printed QR code. URL encodes session ID and passcode: `/attend?s=2026-04-07-Mon&p=a3f9b2`
 - Member opens the link on their phone, sees session details and their name, taps "Mark Attendance"
 - Writes to `attendance/{userId}/sessions/{sessionId}` with a server timestamp
 - Firestore rule enforces: correct passcode + current server time within the session window. Requests outside the window or with a wrong passcode are rejected
 - Duplicate scans are detected client-side (doc already exists → "Already marked")
+
+### Orders (`/orders`)
+Members browse open order events and submit item lists for each. Each item has a name, link, and optional markdown description. Orders go through a status workflow: pending → confirmed → ordered → awaiting_payment → closed. Members can lock their order to signal it is ready for admin review, and upload a payment receipt once invoiced.
+
+### Orders Admin (`/orders/admin`, `/orders/admin/[eventId]`)
+- Create and edit order events (title, markdown description, due date, status)
+- View all orders per event, expandable per user
+- Edit items and set per-item prices
+- Change order status and unlock orders for editing
+- Upload invoice PDFs per order
+- Send order data directly to the Invoice Generator
+
+### Invoice Generator (`/invoice/admin`)
+Generates itemised PDF invoices. Configurable org details (name, email, bank account, shipping address). Supports CSV import from the Orders admin. Each invoice has a customisable prefix, start number, payment description, date, and due date. Global discount can be applied across all people.
 
 ### Bogu Log (`/bogu/admin`)
 - Tracks who is borrowing club equipment (Men, Kote, Do, Tare, Shinai Bag, Bogu Bag)
@@ -205,26 +274,41 @@ Lists all registered users and links to their profile pages.
 
 ---
 
+## Scripts
+
+One-off admin scripts in `scripts/` (not part of the web app). Require a Firebase service account key at `scripts/serviceAccount.json` (gitignored).
+
+### `export-attendance.cjs`
+Exports all Firestore attendance data to three CSV files:
+- `attendance-raw.csv` — one row per check-in
+- `attendance-summary.csv` — per-user totals, sorted descending
+- `attendance-by-session.csv` — per-session headcount
+
+### `analyse-attendance.cjs`
+Reads the exported CSVs and prints:
+- Average attendance per week
+- Average per day of week (Mon / Wed / Fri)
+- Top 3 overall attendees
+- Top 3 Friday attendees
+
+Supports filtering from a configurable start date (default: `2026-07-01`).
+
+---
+
 ## Firestore Security Rules
+
+Rules live in [`firestore.rules`](firestore.rules) at the project root and are deployed automatically on every push to `main`.
 
 ```js
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-  
-    function hasPermission(perm) {
+
+  	function hasPermission(perm) {
       return get(/databases/$(database)/documents/user/$(request.auth.uid)).data.permissions.hasAny([perm]);
     }
 
-    function validAttendance(sessionId, token) {
-      let s   = get(/databases/$(database)/documents/session/$(sessionId));
-      let sec = get(/databases/$(database)/documents/sessionSecret/$(sessionId));
-      return s.data.start <= request.time
-          && s.data.end   >= request.time
-          && sec.data.passcode == token;
-    }
-    
     match /user/{userId} {
       allow read: if request.auth.uid == userId
       						|| hasPermission('profile');
@@ -237,7 +321,7 @@ service cloud.firestore {
                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'phone', 'email2']))
                     || hasPermission('profile');
     }
-    
+
     match /beginner/{userId} {
       allow read: if request.auth.uid == userId
                   || hasPermission('beginner');
@@ -249,7 +333,7 @@ service cloud.firestore {
                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['join', 'filePath']))
                     || hasPermission('beginner');
     }
-    
+
     match /config/beginner {
       allow read: if request.auth != null;
       allow write: if hasPermission('beginner');
@@ -259,13 +343,10 @@ service cloud.firestore {
       allow read: if hasPermission('attendance');
       allow write: if hasPermission('attendance');
     }
-    
-    match /attendance/{userId}/sessions/{sessionId} {
-      allow read: if request.auth.uid == userId
-               || hasPermission('attendance')
-               || hasPermission('bogu');
-      allow create: if (request.auth.uid == userId && validAttendance(sessionId, request.resource.data.p))
-                 || hasPermission('attendance');
+
+    match /bogu/{id} {
+      allow read: if request.auth != null;
+      allow write: if hasPermission('bogu');
     }
 
     match /session/{sessionId} {
@@ -273,14 +354,71 @@ service cloud.firestore {
       allow write: if hasPermission('attendance');
     }
 
+    match /attendance/{userId}/sessions/{sessionId} {
+      allow read: if request.auth.uid == userId
+               || hasPermission('attendance')
+               || hasPermission('bogu');
+      allow create: if (request.auth.uid == userId && validAttendance(sessionId, request.resource.data.p))
+             || hasPermission('attendance');
+    }
+
     match /sessionSecret/{sessionId} {
       allow read: if hasPermission('attendance');
       allow write: if hasPermission('attendance');
     }
 
-    match /bogu/{id} {
+    function validAttendance(sessionId, token) {
+      let s   = get(/databases/$(database)/documents/session/$(sessionId));
+      let sec = get(/databases/$(database)/documents/sessionSecret/$(sessionId));
+      return s.data.start <= request.time
+          && s.data.end   >= request.time
+          && sec.data.passcode == token;
+    }
+
+    match /membership/{userId} {
+      allow read: if request.auth.uid == userId
+                  || hasPermission('membership')
+                  || hasPermission('profile')
+                  || hasPermission('attendance');
+      allow write: if hasPermission('membership');
+    }
+
+    // ── Orders ────────────────────────────────────────────────────────────────
+
+    match /events/{eventId} {
       allow read: if request.auth != null;
-      allow write: if hasPermission('bogu');
+      allow write: if hasPermission('orders');
+
+      match /orders/{userId} {
+        allow read: if request.auth.uid == userId || hasPermission('orders');
+
+        // User creates their own order — must start unlocked, pending, no admin fields
+        allow create: if request.auth.uid == userId
+                      && request.resource.data.locked == false
+                      && request.resource.data.status == 'pending'
+                      && !('itemPrices' in request.resource.data)
+                      && !('invoice'    in request.resource.data)
+                      && !('payment'    in request.resource.data);
+
+        allow update: if hasPermission('orders') || (
+          request.auth.uid == userId && (
+            // Edit items while unlocked
+            (!resource.data.locked
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['items', 'updatedAt']))
+            ||
+            // Lock order (false → true only)
+            (resource.data.locked == false
+              && request.resource.data.locked == true
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['locked', 'updatedAt']))
+            ||
+            // Upload payment receipt (only when invoice is ready)
+            (resource.data.status == 'awaiting_payment'
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['payment', 'updatedAt']))
+          )
+        );
+
+        allow delete: if hasPermission('orders');
+      }
     }
   }
 }

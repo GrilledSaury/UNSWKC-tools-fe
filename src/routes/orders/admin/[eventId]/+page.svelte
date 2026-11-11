@@ -13,6 +13,8 @@
   import { userProfile } from '$lib/stores'
   import Swal from 'sweetalert2'
   import ItemList from '$lib/components/ItemList.svelte'
+  import { marked } from 'marked'
+  marked.use({ breaks: true, gfm: true })
 
   const eventId = $page.params.eventId
 
@@ -211,7 +213,7 @@
     <div class="mt-4 mb-6">
       <div class="text-2xl font-bold">{event.title}</div>
       {#if event.description}
-        <div class="text-gray-500 mt-1">{event.description}</div>
+        <div class="text-gray-500 mt-1 md-desc">{@html marked.parse(event.description)}</div>
       {/if}
     </div>
 

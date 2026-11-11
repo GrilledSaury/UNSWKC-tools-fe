@@ -10,9 +10,16 @@
 	let userList = $state([])
 
 	onMount(async () => {
-		const usersSnap = await getDocs(collection(db, 'user'))
+		const [usersSnap, memberSnap] = await Promise.all([
+			getDocs(collection(db, 'user')),
+			getDocs(collection(db, 'membership')),
+		])
+		const now = new Date()
+		const memberSet = new Set(
+			memberSnap.docs.filter(d => d.data().expiresAt?.toDate() > now).map(d => d.id)
+		)
 		usersSnap.forEach(doc => {
-			userList.push({ uid: doc.id, data: doc.data() })
+			userList.push({ uid: doc.id, data: doc.data(), member: memberSet.has(doc.id) })
 		})
 	})
 
@@ -30,7 +37,10 @@
 		{#each userList as u}
 			<div class="px-4 py-2 bg-white shadow rounded my-2 flex items-center">
 				<div>
-					<div class="font-bold whitespace-nowrap">{u.data.name}</div>
+					<div class="font-bold whitespace-nowrap flex items-center gap-1.5">
+						<span class="{u.member ? 'text-green-500' : 'text-yellow-400'}" title={u.member ? 'Member' : 'Non-member'}>●</span>
+						{u.data.name}
+					</div>
 					<div class="text-sm">{u.data.email}, {u.data.phone}</div>
 					<div class="text-sm text-gray-500">{u.uid}</div>
 				</div>
