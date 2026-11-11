@@ -1,5 +1,5 @@
 <script>
-  import { mdiAccount, mdiLogout, mdiSchool, mdiAccountGroup, mdiCalendarCheck, mdiNotebookOutline, mdiCalendarMonth, mdiReceiptTextOutline, mdiCartOutline, mdiClipboardList } from '@mdi/js'
+  import { mdiAccount, mdiLogout, mdiSchool, mdiAccountGroup, mdiCalendarCheck, mdiNotebookOutline, mdiCalendarMonth, mdiReceiptTextOutline, mdiCartOutline, mdiClipboardList, mdiCalendarBlank } from '@mdi/js'
   import { AIcon } from 'ace.svelte'
   import { goto } from '$app/navigation'
   import { userProfile } from '$lib/stores'
@@ -10,6 +10,7 @@
     { label: 'Beginner Course', icon: mdiSchool, color: 'text-yellow-500', href: () => '/beginner' },
     { label: 'My Attendance', icon: mdiCalendarMonth, color: 'text-green-500', href: () => '/attendance' },
     { label: 'My Orders', icon: mdiCartOutline, color: 'text-indigo-500', href: () => '/orders' },
+    { label: 'Schedule', icon: mdiCalendarBlank, color: 'text-teal-500', href: () => '/schedule' },
   ]
 
   // Apps shown only when user has the matching permission
