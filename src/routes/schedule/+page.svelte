@@ -183,7 +183,7 @@
                 </div>
                 {#if s}
                   {#if s.type === 'event'}
-                    <div class="text-xs font-medium text-sky-600 leading-tight">{fmtTime(s.trainingStart)}</div>
+                    <div class="text-xs font-medium text-sky-600 leading-tight">{fmtTime(s.trainingStart)}<br/>–{fmtTime(s.trainingEnd)}</div>
                     <div class="relative group mt-1">
                       <span class="inline-block text-xs font-bold px-1.5 py-0.5 rounded cursor-default select-none {s.label ? labelTw(s.color) : 'bg-sky-100 text-sky-700'}">
                         {s.label ? labelInitials(s.label) : 'E'}
@@ -196,7 +196,7 @@
                     </div>
                   {:else}
                     <div class="text-xs font-medium text-gray-700 leading-tight">
-                      {fmtTime(s.trainingStart)}
+                      {fmtTime(s.trainingStart)}<br/>–{fmtTime(s.trainingEnd)}
                     </div>
                     {#if s.label}
                       <div class="relative group mt-1">
