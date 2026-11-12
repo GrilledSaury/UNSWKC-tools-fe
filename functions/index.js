@@ -38,6 +38,10 @@ exports.sendTestEmail = onCall(async (request) => {
   return { success: true }
 })
 
+function escapeIcs(str) {
+  return str.replace(/\\/g, '\\\\').replace(/,/g, '\\,').replace(/;/g, '\\;').replace(/\n/g, '\\n')
+}
+
 function fmtIcsUtc(date) {
   const p = n => String(n).padStart(2, '0')
   return `${date.getUTCFullYear()}${p(date.getUTCMonth()+1)}${p(date.getUTCDate())}T${p(date.getUTCHours())}${p(date.getUTCMinutes())}00Z`
@@ -77,7 +81,8 @@ exports.calendarIcs = onRequest({ cors: true }, async (_req, res) => {
       lines.push('BEGIN:VEVENT')
       lines.push(`DTSTART:${fmtIcsUtc(start)}`)
       lines.push(`DTEND:${fmtIcsUtc(end)}`)
-      lines.push(`SUMMARY:${summary}`)
+      lines.push(`SUMMARY:${escapeIcs(summary)}`)
+      if (data.location) lines.push(`LOCATION:${escapeIcs(data.location)}`)
       lines.push(`UID:${d.id}@unswkc`)
       lines.push('END:VEVENT')
     })

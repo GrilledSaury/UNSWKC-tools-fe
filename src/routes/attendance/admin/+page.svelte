@@ -20,6 +20,8 @@
   const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December']
   const DAY_ABBR    = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
 
+  const DEFAULT_LOCATION = 'UNSW Fitness & Aquatic Centre (B5), Gate 2, High St, UNSW Sydney, Kensington NSW 2033, Australia'
+
   // Actual training times for standard days (Mon=1, Wed=3, Fri=5)
   // QR window is automatically ±30 min around these
   const TRAINING_DEFAULTS = {
@@ -47,6 +49,9 @@
   let editingLabel     = $state(null)  // sessionId | null
   let labelInput       = $state('')
   let labelColorInput  = $state('purple')
+
+  let editingLocation = $state(null)  // sessionId | null
+  let locationInput   = $state('')
 
   const COLORS = [
     { key: 'purple', tw: 'bg-purple-100 text-purple-700', swatch: 'bg-purple-500' },
@@ -88,6 +93,22 @@
 
   function focusEl(node) { node.focus() }
 
+  function startEditLocation(session) {
+    editingLocation = session.id
+    locationInput   = session.location ?? ''
+  }
+
+  async function saveLocation(session) {
+    const location = locationInput.trim()
+    try {
+      await updateDoc(doc(db, 'session', session.id), { location })
+      sessions = sessions.map(s => s.id === session.id ? { ...s, location } : s)
+    } catch (err) {
+      Swal.fire('Error', err.message, 'error')
+    }
+    editingLocation = null
+  }
+
   async function saveLabel(session) {
     const label = labelInput.trim()
     const color = label ? labelColorInput : ''
@@ -102,7 +123,7 @@
   let loading  = $state(true)
 
   let showAddModal  = $state(false)
-  let addForm       = $state({ date: '', trainingStart: '19:30', trainingEnd: '21:30', type: 'training', label: '', labelColor: 'purple' })
+  let addForm       = $state({ date: '', trainingStart: '19:30', trainingEnd: '21:30', type: 'training', label: '', labelColor: 'purple', location: DEFAULT_LOCATION })
   let savingSession = $state(false)
 
   // ── Passcode ───────────────────────────────────────────────────────────────
@@ -182,6 +203,7 @@
         label:        d.data().label ?? '',
         color:        d.data().color ?? '',
         type:         d.data().type ?? 'training',
+        location:     d.data().location ?? '',
       }))
     } catch (err) {
       Swal.fire('Error', err.message, 'error')
@@ -226,6 +248,7 @@
           end:           Timestamp.fromDate(addMins(trainEnd,    30)),
           trainingStart: Timestamp.fromDate(trainStart),
           trainingEnd:   Timestamp.fromDate(trainEnd),
+          location:      DEFAULT_LOCATION,
           ...(s.label ? { label: s.label, color: DEFAULT_LABEL_COLORS[s.label] ?? 'purple' } : {}),
         })
         await setDoc(doc(db, 'sessionSecret', s.id), { passcode })
@@ -259,6 +282,7 @@
           trainingStart: Timestamp.fromDate(trainStart),
           trainingEnd:   Timestamp.fromDate(trainEnd),
           type:          'event',
+          location:      addForm.location.trim(),
           ...(labelTrim ? { label: labelTrim, color: addForm.labelColor } : {}),
         })
       } else {
@@ -270,6 +294,7 @@
           end:           Timestamp.fromDate(addMins(trainEnd,    30)),
           trainingStart: Timestamp.fromDate(trainStart),
           trainingEnd:   Timestamp.fromDate(trainEnd),
+          location:      addForm.location.trim(),
           ...(autoLabel ? { label: autoLabel, color: autoColor } : {}),
         })
         await setDoc(doc(db, 'sessionSecret', id), { passcode })
@@ -541,7 +566,7 @@
     </button>
     <button
       class="bg-green-500 text-white font-bold px-3 py-1.5 rounded shadow text-sm flex items-center gap-1 disabled:opacity-50"
-      onclick={() => { addForm = { date: '', trainingStart: '19:30', trainingEnd: '21:30', type: 'training', label: '', labelColor: 'purple' }; showAddModal = true }}
+      onclick={() => { addForm = { date: '', trainingStart: '19:30', trainingEnd: '21:30', type: 'training', label: '', labelColor: 'purple', location: DEFAULT_LOCATION }; showAddModal = true }}
     >
       <AIcon path={mdiPlus} size="18px" />Add Custom
     </button>
@@ -613,6 +638,32 @@
               {:else}
                 <button class="text-xs text-gray-300 hover:text-gray-500 flex items-center gap-0.5" onclick={() => startEditLabel(session)}>
                   <AIcon path={mdiPencil} size="12px" />label
+                </button>
+              {/if}
+            </div>
+            <!-- Location -->
+            <div class="mt-1 flex items-center gap-1 min-w-0">
+              {#if editingLocation === session.id}
+                <input
+                  class="border rounded px-2 py-0.5 text-xs grow min-w-0"
+                  bind:value={locationInput}
+                  onkeydown={e => { if (e.key === 'Enter') saveLocation(session); if (e.key === 'Escape') editingLocation = null }}
+                  use:focusEl
+                />
+                <button class="text-green-600 p-0.5 shrink-0" onclick={() => saveLocation(session)}>
+                  <AIcon path={mdiCheck} size="14px" />
+                </button>
+                <button class="text-gray-400 p-0.5 shrink-0" onclick={() => editingLocation = null}>
+                  <AIcon path={mdiClose} size="14px" />
+                </button>
+              {:else if session.location}
+                <span class="text-xs text-gray-400 truncate">{session.location}</span>
+                <button class="text-gray-300 hover:text-gray-500 p-0.5 shrink-0" onclick={() => startEditLocation(session)}>
+                  <AIcon path={mdiPencil} size="12px" />
+                </button>
+              {:else}
+                <button class="text-xs text-gray-300 hover:text-gray-500 flex items-center gap-0.5" onclick={() => startEditLocation(session)}>
+                  <AIcon path={mdiPencil} size="12px" />location
                 </button>
               {/if}
             </div>
@@ -744,11 +795,11 @@
         <div class="flex rounded border overflow-hidden text-sm font-bold">
           <button
             class="flex-1 py-1.5 transition-colors {addForm.type === 'training' ? 'bg-blue-500 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}"
-            onclick={() => addForm.type = 'training'}
+            onclick={() => { addForm.type = 'training'; if (!addForm.location) addForm.location = DEFAULT_LOCATION }}
           >Training</button>
           <button
             class="flex-1 py-1.5 transition-colors {addForm.type === 'event' ? 'bg-sky-500 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}"
-            onclick={() => addForm.type = 'event'}
+            onclick={() => { addForm.type = 'event'; if (addForm.location === DEFAULT_LOCATION) addForm.location = '' }}
           >Event</button>
         </div>
         <label class="flex flex-col">
@@ -787,6 +838,14 @@
             {/each}
           </div>
         {/if}
+        <label class="flex flex-col">
+          <span class="font-bold text-sm mb-1">Location <span class="font-normal text-gray-400">(optional)</span></span>
+          <input
+            class="border rounded px-2 py-1.5 text-sm"
+            placeholder="Venue"
+            bind:value={addForm.location}
+          />
+        </label>
       </div>
       <div class="p-4 border-t flex justify-end gap-2">
         <button class="px-4 py-1.5 rounded border font-bold" onclick={() => showAddModal = false}>Cancel</button>

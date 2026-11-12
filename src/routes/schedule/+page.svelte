@@ -74,9 +74,10 @@
       map[dateKey(s)] = {
         trainingStart: data.trainingStart?.toDate() ?? new Date(s.getTime() + 30*60*1000),
         trainingEnd:   data.trainingEnd?.toDate()   ?? new Date(e.getTime() - 30*60*1000),
-        label: data.label ?? '',
-        color: data.color ?? '',
-        type:  data.type  ?? 'training',
+        label:    data.label    ?? '',
+        color:    data.color    ?? '',
+        type:     data.type     ?? 'training',
+        location: data.location ?? '',
       }
     })
     sessionMap = map
@@ -189,8 +190,9 @@
                         {s.label ? labelInitials(s.label) : 'E'}
                       </span>
                       <div class="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 pointer-events-none">
-                        <div class="bg-gray-800 text-white text-xs rounded px-2 py-1 whitespace-nowrap shadow-lg">
-                          {s.label || 'Event'}
+                        <div class="bg-gray-800 text-white text-xs rounded px-2 py-1 shadow-lg max-w-48">
+                          <div class="font-bold">{s.label || 'Event'}</div>
+                          {#if s.location}<div class="text-gray-300 mt-0.5">{s.location}</div>{/if}
                         </div>
                       </div>
                     </div>
@@ -204,8 +206,9 @@
                           {labelInitials(s.label)}
                         </span>
                         <div class="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 pointer-events-none">
-                          <div class="bg-gray-800 text-white text-xs rounded px-2 py-1 whitespace-nowrap shadow-lg">
-                            {s.label}
+                          <div class="bg-gray-800 text-white text-xs rounded px-2 py-1 shadow-lg max-w-48">
+                            <div class="font-bold">{s.label}</div>
+                            {#if s.location}<div class="text-gray-300 mt-0.5">{s.location}</div>{/if}
                           </div>
                         </div>
                       </div>
