@@ -175,7 +175,7 @@
             {@const key  = day ? dateKey(day) : ''}
             {@const s    = day ? sessionMap[key] : null}
             {@const isToday = key === todayKey}
-            <div class="min-h-16 p-1.5 {!day || day.getMonth() !== selectedMonth ? 'bg-gray-50' : ''}">
+            <div class="relative group min-h-16 p-1.5 {!day || day.getMonth() !== selectedMonth ? 'bg-gray-50' : ''}">
               {#if day}
                 <div class="flex items-center gap-1 mb-1">
                   <span class="text-xs {isToday ? 'bg-blue-500 text-white w-5 h-5 rounded-full flex items-center justify-center font-bold' : 'text-gray-400'}">
@@ -185,35 +185,26 @@
                 {#if s}
                   {#if s.type === 'event'}
                     <div class="text-xs font-medium text-sky-600 leading-tight">{fmtTime(s.trainingStart)}<br/>–{fmtTime(s.trainingEnd)}</div>
-                    <div class="relative group mt-1">
-                      <span class="inline-block text-xs font-bold px-1.5 py-0.5 rounded cursor-default select-none {s.label ? labelTw(s.color) : 'bg-sky-100 text-sky-700'}">
-                        {s.label ? labelInitials(s.label) : 'E'}
-                      </span>
-                      <div class="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 pointer-events-none">
-                        <div class="bg-gray-800 text-white text-xs rounded px-2 py-1 shadow-lg max-w-48">
-                          <div class="font-bold">{s.label || 'Event'}</div>
-                          {#if s.location}<div class="text-gray-300 mt-0.5">{s.location}</div>{/if}
-                        </div>
-                      </div>
-                    </div>
+                    <span class="inline-block text-xs font-bold px-1.5 py-0.5 rounded cursor-default select-none mt-1 {s.label ? labelTw(s.color) : 'bg-sky-100 text-sky-700'}">
+                      {s.label ? labelInitials(s.label) : 'E'}
+                    </span>
                   {:else}
                     <div class="text-xs font-medium text-gray-700 leading-tight">
                       {fmtTime(s.trainingStart)}<br/>–{fmtTime(s.trainingEnd)}
                     </div>
                     {#if s.label}
-                      <div class="relative group mt-1">
-                        <span class="inline-block text-xs font-bold px-1.5 py-0.5 rounded cursor-default select-none {labelTw(s.color)}">
-                          {labelInitials(s.label)}
-                        </span>
-                        <div class="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 pointer-events-none">
-                          <div class="bg-gray-800 text-white text-xs rounded px-2 py-1 shadow-lg max-w-48">
-                            <div class="font-bold">{s.label}</div>
-                            {#if s.location}<div class="text-gray-300 mt-0.5">{s.location}</div>{/if}
-                          </div>
-                        </div>
-                      </div>
+                      <span class="inline-block text-xs font-bold px-1.5 py-0.5 rounded cursor-default select-none mt-1 {labelTw(s.color)}">
+                        {labelInitials(s.label)}
+                      </span>
                     {/if}
                   {/if}
+                  <div class="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 pointer-events-none">
+                    <div class="bg-gray-800 text-white text-xs rounded px-2 py-1 shadow-lg w-44">
+                      <div class="font-semibold text-gray-300">{s.type === 'event' ? 'Event' : 'Training'}</div>
+                      {#if s.label}<div class="font-bold mt-0.5">{s.label}</div>{/if}
+                      {#if s.location}<div class="text-gray-400 mt-1 leading-tight">{s.location}</div>{/if}
+                    </div>
+                  </div>
                 {/if}
               {/if}
             </div>
