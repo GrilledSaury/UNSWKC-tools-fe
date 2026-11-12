@@ -3,7 +3,7 @@
   import { db } from '$lib/firebase'
   import { collection, getDocs, query, where, orderBy, Timestamp } from 'firebase/firestore'
   import { AIcon } from 'ace.svelte'
-  import { mdiHome, mdiChevronLeft, mdiChevronRight, mdiRss, mdiContentCopy, mdiCheck } from '@mdi/js'
+  import { mdiHome, mdiChevronLeft, mdiChevronRight, mdiRss, mdiContentCopy, mdiCheck, mdiClose } from '@mdi/js'
   import { goto } from '$app/navigation'
   import { userProfile } from '$lib/stores'
 
@@ -121,11 +121,18 @@
         class="flex items-center gap-1.5 text-sm font-semibold text-gray-500 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-200 transition-colors"
         onclick={() => showSubscribe = !showSubscribe}
       >
-        <AIcon path={mdiRss} size="18px" />Subscribe
+        <AIcon path={mdiRss} size="18px" /><span class="hidden sm:inline">Subscribe</span>
       </button>
       {#if showSubscribe}
-        <div class="absolute right-0 top-full mt-1 bg-white rounded shadow-lg border p-3 z-30 w-72">
-          <div class="text-xs font-bold text-gray-500 mb-2">Calendar Subscription</div>
+        <!-- bottom sheet on mobile, dropdown on sm+ -->
+        <div class="fixed inset-x-4 bottom-4 h-[50vh] sm:h-auto sm:absolute sm:inset-x-auto sm:bottom-auto sm:right-0 sm:top-full sm:mt-1 bg-white rounded-xl shadow-lg border p-4 z-30 sm:w-72 flex flex-col">
+          <div class="flex items-center justify-between mb-3">
+            <div class="text-xs font-bold text-gray-500">Calendar Subscription</div>
+            <button class="sm:hidden text-gray-400 hover:text-gray-600 p-0.5" onclick={() => showSubscribe = false}>
+              <AIcon path={mdiClose} size="20px" />
+            </button>
+          </div>
+          <div class="overflow-y-auto grow">
           <a
             href={webcalUrl()}
             class="block w-full text-center bg-blue-500 hover:bg-blue-600 text-white font-bold text-sm px-3 py-1.5 rounded mb-2 transition-colors"
@@ -145,6 +152,7 @@
             </button>
           </div>
           <p class="text-xs text-gray-400 mt-1.5">Paste the URL into Google Calendar → "Add by URL"</p>
+          </div>
         </div>
       {/if}
     </div>
