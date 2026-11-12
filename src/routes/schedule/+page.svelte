@@ -169,7 +169,7 @@
     {#if loading}
       <div class="py-16 text-center text-gray-400">Loading...</div>
     {:else}
-      {#each weeks as week}
+      {#each weeks as week, wi}
         <div class="grid grid-cols-7 divide-x border-b last:border-b-0">
           {#each week as day}
             {@const key  = day ? dateKey(day) : ''}
@@ -198,7 +198,7 @@
                       </span>
                     {/if}
                   {/if}
-                  <div class="absolute bottom-full left-0 mb-1 hidden group-hover:block z-20 pointer-events-none">
+                  <div class="absolute {wi === 0 ? 'top-full mt-1' : 'bottom-full mb-1'} left-0 hidden group-hover:block z-20 pointer-events-none">
                     <div class="bg-gray-800 text-white text-xs rounded px-2 py-1 shadow-lg w-44">
                       <div class="font-semibold text-gray-300">{s.type === 'event' ? 'Event' : 'Training'}</div>
                       {#if s.label}<div class="font-bold mt-0.5">{s.label}</div>{/if}
