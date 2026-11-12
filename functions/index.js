@@ -42,6 +42,22 @@ function escapeIcs(str) {
   return str.replace(/\\/g, '\\\\').replace(/,/g, '\\,').replace(/;/g, '\\;').replace(/\n/g, '\\n')
 }
 
+// RFC 5545 §3.1: fold lines longer than 75 octets
+function foldLine(line) {
+  const buf = Buffer.from(line, 'utf8')
+  if (buf.length <= 75) return line
+  const parts = []
+  let pos = 0
+  let first = true
+  while (pos < buf.length) {
+    const limit = first ? 75 : 74
+    parts.push(buf.subarray(pos, pos + limit).toString('utf8'))
+    pos += limit
+    first = false
+  }
+  return parts.join('\r\n ')
+}
+
 function fmtIcsUtc(date) {
   const p = n => String(n).padStart(2, '0')
   return `${date.getUTCFullYear()}${p(date.getUTCMonth()+1)}${p(date.getUTCDate())}T${p(date.getUTCHours())}${p(date.getUTCMinutes())}00Z`
@@ -78,20 +94,23 @@ exports.calendarIcs = onRequest({ cors: true }, async (_req, res) => {
         ? (data.label || 'UNSWKC Event')
         : ('UNSWKC Training' + (data.label ? ` – ${data.label}` : ''))
 
+      const DEFAULT_LOCATION = 'UNSW Fitness & Aquatic Centre (B5), Gate 2, High St, UNSW Sydney, Kensington NSW 2033, Australia'
+      const location = data.location || (data.type !== 'event' ? DEFAULT_LOCATION : 'TBD')
+
       lines.push('BEGIN:VEVENT')
-      lines.push(`DTSTART:${fmtIcsUtc(start)}`)
-      lines.push(`DTEND:${fmtIcsUtc(end)}`)
-      lines.push(`SUMMARY:${escapeIcs(summary)}`)
-      if (data.location) lines.push(`LOCATION:${escapeIcs(data.location)}`)
-      lines.push(`UID:${d.id}@unswkc`)
+      lines.push(foldLine(`DTSTART:${fmtIcsUtc(start)}`))
+      lines.push(foldLine(`DTEND:${fmtIcsUtc(end)}`))
+      lines.push(foldLine(`SUMMARY:${escapeIcs(summary)}`))
+      lines.push(`LOCATION:${location}`)
+      lines.push(foldLine(`UID:${d.id}@unswkc`))
       lines.push('END:VEVENT')
     })
 
     lines.push('END:VCALENDAR')
 
     res.set('Content-Type', 'text/calendar; charset=utf-8')
-    res.set('Cache-Control', 'public, max-age=3600')
-    res.send(lines.join('\r\n'))
+    res.set('Cache-Control', 'private, max-age=3600')
+    res.send(lines.join('\r\n') + '\r\n')
   } catch (err) {
     res.status(500).send('Error generating calendar')
   }
