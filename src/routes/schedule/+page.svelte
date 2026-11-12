@@ -179,7 +179,7 @@
     {:else}
       {#each weeks as week, wi}
         <div class="grid grid-cols-7 divide-x border-b last:border-b-0">
-          {#each week as day}
+          {#each week as day, di}
             {@const key  = day ? dateKey(day) : ''}
             {@const s    = day ? sessionMap[key] : null}
             {@const isToday = key === todayKey}
@@ -206,7 +206,7 @@
                       </span>
                     {/if}
                   {/if}
-                  <div class="absolute {wi === 0 ? 'top-full mt-1' : 'bottom-full mb-1'} left-0 hidden group-hover:block z-20 pointer-events-none">
+                  <div class="absolute {wi === 0 ? 'top-full mt-1' : 'bottom-full mb-1'} {di >= 5 ? 'right-0' : 'left-0'} hidden group-hover:block z-20 pointer-events-none">
                     <div class="bg-gray-800 text-white text-xs rounded px-2 py-1 shadow-lg w-44">
                       <div class="font-semibold text-gray-300">{s.type === 'event' ? 'Event' : 'Training'}</div>
                       {#if s.label}<div class="font-bold mt-0.5">{s.label}</div>{/if}
