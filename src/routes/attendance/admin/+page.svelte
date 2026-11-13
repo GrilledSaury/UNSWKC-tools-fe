@@ -2,14 +2,14 @@
   import { onMount } from 'svelte'
   import { db } from '$lib/firebase'
   import {
-    collection, doc, getDoc, getDocs, setDoc, deleteDoc,
+    collection, doc, getDoc, getDocs, setDoc, deleteDoc, updateDoc,
     query, where, orderBy, Timestamp, documentId, serverTimestamp,
   } from 'firebase/firestore'
   import { AIcon } from 'ace.svelte'
   import {
-    mdiHome, mdiPlus, mdiDelete, mdiQrcode,
+    mdiHome, mdiPlus, mdiDelete, mdiQrcode, mdiPencil,
     mdiEye, mdiEyeOff, mdiChevronLeft, mdiChevronRight, mdiRefresh, mdiPrinter,
-    mdiAccountMultiple, mdiCheck, mdiMonitor,
+    mdiAccountMultiple, mdiCheck, mdiMonitor, mdiClose,
   } from '@mdi/js'
   import { goto } from '$app/navigation'
   import { userProfile } from '$lib/stores'
@@ -20,12 +20,21 @@
   const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December']
   const DAY_ABBR    = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
 
-  // Default start/end for standard training days (Mon=1, Wed=3, Fri=5)
+  const DEFAULT_LOCATION = 'UNSW Fitness & Aquatic Centre (B5), Gate 2, High St, UNSW Sydney, Kensington NSW 2033, Australia'
+
+  // Actual training times for standard days (Mon=1, Wed=3, Fri=5)
+  // QR window is automatically ±30 min around these
   const TRAINING_DEFAULTS = {
-    1: { start: '19:00', end: '22:00' },
-    3: { start: '19:00', end: '22:00' },
-    5: { start: '19:30', end: '22:00' },
+    1: { trainingStart: '19:30', trainingEnd: '21:30' },
+    3: { trainingStart: '19:30', trainingEnd: '21:30' },
+    5: { trainingStart: '20:00', trainingEnd: '21:30' },
   }
+
+  function addMins(date, mins) { return new Date(date.getTime() + mins * 60 * 1000) }
+
+  // Falls back to QR window ±30 min for sessions created before trainingStart/trainingEnd were added
+  function displayStart(s) { return s.trainingStart ?? addMins(s.start,  30) }
+  function displayEnd(s)   { return s.trainingEnd   ?? addMins(s.end,   -30) }
 
   const now = new Date()
   let selectedYear  = $state(now.getFullYear())
@@ -35,11 +44,86 @@
   let saltVisible = $state(false)
   let savingSalt  = $state(false)
 
-  let sessions = $state([])  // { id, start: Date, end: Date, passcode }
+  let sessions = $state([])  // { id, start: Date, end: Date, passcode, label }
+
+  let editingLabel     = $state(null)  // sessionId | null
+  let labelInput       = $state('')
+  let labelColorInput  = $state('purple')
+
+  let editingLocation = $state(null)  // sessionId | null
+  let locationInput   = $state('')
+
+  const COLORS = [
+    { key: 'purple', tw: 'bg-purple-100 text-purple-700', swatch: 'bg-purple-500' },
+    { key: 'orange', tw: 'bg-orange-100 text-orange-700', swatch: 'bg-orange-500' },
+    { key: 'blue',   tw: 'bg-blue-100 text-blue-700',     swatch: 'bg-blue-500'   },
+    { key: 'green',  tw: 'bg-green-100 text-green-700',   swatch: 'bg-green-500'  },
+    { key: 'red',    tw: 'bg-red-100 text-red-700',       swatch: 'bg-red-500'    },
+    { key: 'yellow', tw: 'bg-yellow-100 text-yellow-700', swatch: 'bg-yellow-400' },
+    { key: 'pink',   tw: 'bg-pink-100 text-pink-700',     swatch: 'bg-pink-500'   },
+    { key: 'teal',   tw: 'bg-teal-100 text-teal-700',     swatch: 'bg-teal-500'   },
+  ]
+  const COLORS_MAP = Object.fromEntries(COLORS.map(c => [c.key, c]))
+  function labelTw(color) { return COLORS_MAP[color]?.tw ?? 'bg-gray-100 text-gray-600' }
+
+  const DEFAULT_LABEL_COLORS = { 'Bokuto Waza': 'purple', 'Hybrid Bokuto Waza': 'orange' }
+
+  // Returns the date number of the nth occurrence of weekday (0=Sun…6=Sat) in the given month
+  function nthWeekday(year, month, weekday, n) {
+    const d = new Date(year, month, 1)
+    let count = 0
+    while (d.getMonth() === month) {
+      if (d.getDay() === weekday) { count++; if (count === n) return d.getDate() }
+      d.setDate(d.getDate() + 1)
+    }
+    return null
+  }
+
+  function defaultLabel(year, month, dateNum, dayOfWeek) {
+    if (dayOfWeek === 3 && dateNum === nthWeekday(year, month, 3, 1)) return 'Bokuto Waza'
+    if (dayOfWeek === 1 && dateNum === nthWeekday(year, month, 1, 3)) return 'Hybrid Bokuto Waza'
+    return ''
+  }
+
+  function startEditLabel(session) {
+    editingLabel    = session.id
+    labelInput      = session.label ?? ''
+    labelColorInput = session.color ?? 'purple'
+  }
+
+  function focusEl(node) { node.focus() }
+
+  function startEditLocation(session) {
+    editingLocation = session.id
+    locationInput   = session.location ?? ''
+  }
+
+  async function saveLocation(session) {
+    const location = locationInput.trim()
+    try {
+      await updateDoc(doc(db, 'session', session.id), { location })
+      sessions = sessions.map(s => s.id === session.id ? { ...s, location } : s)
+    } catch (err) {
+      Swal.fire('Error', err.message, 'error')
+    }
+    editingLocation = null
+  }
+
+  async function saveLabel(session) {
+    const label = labelInput.trim()
+    const color = label ? labelColorInput : ''
+    try {
+      await updateDoc(doc(db, 'session', session.id), { label, color })
+      sessions = sessions.map(s => s.id === session.id ? { ...s, label, color } : s)
+    } catch (err) {
+      Swal.fire('Error', err.message, 'error')
+    }
+    editingLabel = null
+  }
   let loading  = $state(true)
 
   let showAddModal  = $state(false)
-  let addForm       = $state({ date: '', startTime: '19:00', endTime: '21:30' })
+  let addForm       = $state({ date: '', trainingStart: '19:30', trainingEnd: '21:30', type: 'training', label: '', labelColor: 'purple', location: DEFAULT_LOCATION })
   let savingSession = $state(false)
 
   // ── Passcode ───────────────────────────────────────────────────────────────
@@ -110,10 +194,16 @@
         snap.docs.map(d => getDoc(doc(db, 'sessionSecret', d.id)))
       )
       sessions = snap.docs.map((d, i) => ({
-        id:       d.id,
-        start:    d.data().start.toDate(),
-        end:      d.data().end.toDate(),
-        passcode: secretSnaps[i].exists() ? secretSnaps[i].data().passcode : '',
+        id:           d.id,
+        start:        d.data().start.toDate(),
+        end:          d.data().end.toDate(),
+        trainingStart: d.data().trainingStart?.toDate() ?? null,
+        trainingEnd:   d.data().trainingEnd?.toDate()   ?? null,
+        passcode:     secretSnaps[i].exists() ? secretSnaps[i].data().passcode : '',
+        label:        d.data().label ?? '',
+        color:        d.data().color ?? '',
+        type:         d.data().type ?? 'training',
+        location:     d.data().location ?? '',
       }))
     } catch (err) {
       Swal.fire('Error', err.message, 'error')
@@ -136,7 +226,9 @@
         const dd  = String(d.getDate()).padStart(2, '0')
         const id  = `${selectedYear}-${mm}-${dd}-${DAY_ABBR[day]}`
         if (!existing.has(id)) {
-          toCreate.push({ id, date: `${selectedYear}-${mm}-${dd}`, ...TRAINING_DEFAULTS[day] })
+          const label = defaultLabel(selectedYear, selectedMonth, d.getDate(), day)
+          toCreate.push({ id, date: `${selectedYear}-${mm}-${dd}`, ...TRAINING_DEFAULTS[day], label })
+
         }
       }
       d.setDate(d.getDate() + 1)
@@ -149,9 +241,15 @@
     try {
       for (const s of toCreate) {
         const passcode = await generatePasscode(salt, s.id)
+        const trainStart = new Date(`${s.date}T${s.trainingStart}:00`)
+        const trainEnd   = new Date(`${s.date}T${s.trainingEnd}:00`)
         await setDoc(doc(db, 'session', s.id), {
-          start: Timestamp.fromDate(new Date(`${s.date}T${s.start}:00`)),
-          end:   Timestamp.fromDate(new Date(`${s.date}T${s.end}:00`)),
+          start:         Timestamp.fromDate(addMins(trainStart, -30)),
+          end:           Timestamp.fromDate(addMins(trainEnd,    30)),
+          trainingStart: Timestamp.fromDate(trainStart),
+          trainingEnd:   Timestamp.fromDate(trainEnd),
+          location:      DEFAULT_LOCATION,
+          ...(s.label ? { label: s.label, color: DEFAULT_LABEL_COLORS[s.label] ?? 'purple' } : {}),
         })
         await setDoc(doc(db, 'sessionSecret', s.id), { passcode })
       }
@@ -164,19 +262,43 @@
   }
 
   async function saveCustomSession() {
-    if (!addForm.date || !addForm.startTime || !addForm.endTime) return
-    if (!salt) { Swal.fire('No salt set', 'Set a salt first.', 'warning'); return }
+    if (!addForm.date || !addForm.trainingStart || !addForm.trainingEnd) return
+    if (addForm.type === 'training' && !salt) { Swal.fire('No salt set', 'Set a salt first.', 'warning'); return }
     if (savingSession) return
     savingSession = true
     try {
-      const dayAbbr  = DAY_ABBR[new Date(addForm.date + 'T12:00:00').getDay()]
-      const id       = `${addForm.date}-${dayAbbr}`
-      const passcode = await generatePasscode(salt, id)
-      await setDoc(doc(db, 'session', id), {
-        start: Timestamp.fromDate(new Date(`${addForm.date}T${addForm.startTime}:00`)),
-        end:   Timestamp.fromDate(new Date(`${addForm.date}T${addForm.endTime}:00`)),
-      })
-      await setDoc(doc(db, 'sessionSecret', id), { passcode })
+      const dateObj    = new Date(addForm.date + 'T12:00:00')
+      const dayOfWeek  = dateObj.getDay()
+      const dayAbbr    = DAY_ABBR[dayOfWeek]
+      const id         = `${addForm.date}-${dayAbbr}`
+      const trainStart = new Date(`${addForm.date}T${addForm.trainingStart}:00`)
+      const trainEnd   = new Date(`${addForm.date}T${addForm.trainingEnd}:00`)
+      const labelTrim  = addForm.label.trim()
+
+      if (addForm.type === 'event') {
+        await setDoc(doc(db, 'session', id), {
+          start:         Timestamp.fromDate(trainStart),
+          end:           Timestamp.fromDate(trainEnd),
+          trainingStart: Timestamp.fromDate(trainStart),
+          trainingEnd:   Timestamp.fromDate(trainEnd),
+          type:          'event',
+          location:      addForm.location.trim(),
+          ...(labelTrim ? { label: labelTrim, color: addForm.labelColor } : {}),
+        })
+      } else {
+        const autoLabel = labelTrim || defaultLabel(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), dayOfWeek)
+        const autoColor = labelTrim ? addForm.labelColor : (DEFAULT_LABEL_COLORS[autoLabel] ?? 'purple')
+        const passcode  = await generatePasscode(salt, id)
+        await setDoc(doc(db, 'session', id), {
+          start:         Timestamp.fromDate(addMins(trainStart, -30)),
+          end:           Timestamp.fromDate(addMins(trainEnd,    30)),
+          trainingStart: Timestamp.fromDate(trainStart),
+          trainingEnd:   Timestamp.fromDate(trainEnd),
+          location:      addForm.location.trim(),
+          ...(autoLabel ? { label: autoLabel, color: autoColor } : {}),
+        })
+        await setDoc(doc(db, 'sessionSecret', id), { passcode })
+      }
       showAddModal = false
       await loadSessions()
     } catch (err) {
@@ -229,23 +351,33 @@
     const qrX = (W - qrSize) / 2
     const qrY = (H - qrSize) / 2 - 15
 
-    for (let i = 0; i < sessions.length; i++) {
-      const session = sessions[i]
+    const trainingSessions = sessions.filter(s => s.type !== 'event')
+    for (let i = 0; i < trainingSessions.length; i++) {
+      const session = trainingSessions[i]
       if (i > 0) pdf.addPage()
 
       const url     = `${window.location.origin}/attend?s=${session.id}&p=${session.passcode}`
       const dataUrl = await QRCode.toDataURL(url, { width: 800, margin: 1 })
       const label   = fmtDate(session.start)
-      const time    = `${fmtTime(session.start)} – ${fmtTime(session.end)}`
+      const time    = `${fmtTime(displayStart(session))} – ${fmtTime(displayEnd(session))}`
 
       pdf.setFont('helvetica', 'bold')
       pdf.setFontSize(20)
-      pdf.text(label, W / 2, qrY - 20, { align: 'center' })
+      pdf.text(label, W / 2, session.label ? qrY - 24 : qrY - 20, { align: 'center' })
 
       pdf.setFont('helvetica', 'normal')
       pdf.setFontSize(14)
       pdf.setTextColor(100)
-      pdf.text(time, W / 2, qrY - 10, { align: 'center' })
+      pdf.text(time, W / 2, session.label ? qrY - 14 : qrY - 10, { align: 'center' })
+
+      if (session.label) {
+        pdf.setFont('helvetica', 'bold')
+        pdf.setFontSize(12)
+        const PDF_RGB = { purple:[120,60,200], orange:[194,80,10], blue:[29,100,210], green:[22,120,60], red:[190,30,30], yellow:[160,100,0], pink:[190,24,93], teal:[15,118,110] }
+        const [r,g,b] = PDF_RGB[session.color] ?? PDF_RGB.purple
+        pdf.setTextColor(r, g, b)
+        pdf.text(session.label, W / 2, qrY - 5, { align: 'center' })
+      }
       pdf.setTextColor(0)
 
       pdf.addImage(dataUrl, 'PNG', qrX, qrY, qrSize, qrSize)
@@ -256,7 +388,7 @@
       pdf.setTextColor(0)
     }
 
-    pdf.save(`QR-${MONTH_NAMES[selectedMonth]}-${selectedYear}.pdf`)
+    if (trainingSessions.length > 0) pdf.save(`QR-${MONTH_NAMES[selectedMonth]}-${selectedYear}.pdf`)
   }
 
   // ── Session attendance view ────────────────────────────────────────────────
@@ -434,8 +566,7 @@
     </button>
     <button
       class="bg-green-500 text-white font-bold px-3 py-1.5 rounded shadow text-sm flex items-center gap-1 disabled:opacity-50"
-      onclick={() => { addForm = { date: '', startTime: '19:00', endTime: '21:30' }; showAddModal = true }}
-      disabled={!salt}
+      onclick={() => { addForm = { date: '', trainingStart: '19:30', trainingEnd: '21:30', type: 'training', label: '', labelColor: 'purple', location: DEFAULT_LOCATION }; showAddModal = true }}
     >
       <AIcon path={mdiPlus} size="18px" />Add Custom
     </button>
@@ -462,16 +593,89 @@
       {#each sessions as session}
         <div class="bg-white rounded shadow px-4 py-3 flex items-center gap-4">
           <div class="grow min-w-0">
-            <div class="font-bold">{fmtDate(session.start)}</div>
-            <div class="text-sm text-gray-500">{fmtTime(session.start)} – {fmtTime(session.end)}</div>
-            <div class="font-mono text-xs text-gray-400 mt-0.5">passcode: {session.passcode}</div>
+            <div class="flex items-center gap-2">
+              <div class="font-bold">{fmtDate(session.start)}</div>
+              {#if session.type === 'event'}
+                <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-sky-100 text-sky-700">Event</span>
+              {/if}
+            </div>
+            <div class="text-sm text-gray-500">{fmtTime(displayStart(session))} – {fmtTime(displayEnd(session))}</div>
+            {#if session.type !== 'event'}
+              <div class="font-mono text-xs text-gray-400 mt-0.5">passcode: {session.passcode}</div>
+            {/if}
+            <div class="mt-1.5 flex items-center gap-1.5">
+              {#if editingLabel === session.id}
+                <div class="flex flex-col gap-1">
+                  <div class="flex items-center gap-1">
+                    <input
+                      class="border rounded px-2 py-0.5 text-xs w-36"
+                      bind:value={labelInput}
+                      onkeydown={e => { if (e.key === 'Enter') saveLabel(session); if (e.key === 'Escape') editingLabel = null }}
+                      use:focusEl
+                    />
+                    <button class="text-green-600 p-0.5" onclick={() => saveLabel(session)}>
+                      <AIcon path={mdiCheck} size="14px" />
+                    </button>
+                    <button class="text-gray-400 p-0.5" onclick={() => editingLabel = null}>
+                      <AIcon path={mdiClose} size="14px" />
+                    </button>
+                  </div>
+                  <div class="flex gap-1">
+                    {#each COLORS as c}
+                      <button
+                        class="w-4 h-4 rounded-full {c.swatch} {labelColorInput === c.key ? 'ring-2 ring-offset-1 ring-gray-400' : ''}"
+                        onclick={() => labelColorInput = c.key}
+                        aria-label={c.key}
+                      ></button>
+                    {/each}
+                  </div>
+                </div>
+              {:else if session.label}
+                <span class="text-xs font-semibold px-2 py-0.5 rounded-full {labelTw(session.color)}">{session.label}</span>
+                <button class="text-gray-300 hover:text-gray-500 p-0.5" onclick={() => startEditLabel(session)}>
+                  <AIcon path={mdiPencil} size="12px" />
+                </button>
+              {:else}
+                <button class="text-xs text-gray-300 hover:text-gray-500 flex items-center gap-0.5" onclick={() => startEditLabel(session)}>
+                  <AIcon path={mdiPencil} size="12px" />label
+                </button>
+              {/if}
+            </div>
+            <!-- Location -->
+            <div class="mt-1 flex items-center gap-1 min-w-0">
+              {#if editingLocation === session.id}
+                <input
+                  class="border rounded px-2 py-0.5 text-xs grow min-w-0"
+                  bind:value={locationInput}
+                  onkeydown={e => { if (e.key === 'Enter') saveLocation(session); if (e.key === 'Escape') editingLocation = null }}
+                  use:focusEl
+                />
+                <button class="text-green-600 p-0.5 shrink-0" onclick={() => saveLocation(session)}>
+                  <AIcon path={mdiCheck} size="14px" />
+                </button>
+                <button class="text-gray-400 p-0.5 shrink-0" onclick={() => editingLocation = null}>
+                  <AIcon path={mdiClose} size="14px" />
+                </button>
+              {:else if session.location}
+                <span class="text-xs text-gray-400 truncate">{session.location}</span>
+                <button class="text-gray-300 hover:text-gray-500 p-0.5 shrink-0" onclick={() => startEditLocation(session)}>
+                  <AIcon path={mdiPencil} size="12px" />
+                </button>
+              {:else}
+                <button class="text-xs text-gray-300 hover:text-gray-500 flex items-center gap-0.5" onclick={() => startEditLocation(session)}>
+                  <AIcon path={mdiPencil} size="12px" />location
+                </button>
+              {/if}
+            </div>
           </div>
-          <button class="text-green-600 p-1 shrink-0" onclick={() => openView(session)} title="View attendance">
-            <AIcon path={mdiAccountMultiple} />
-          </button>
-          <button class="text-indigo-500 p-1 shrink-0" onclick={() => openQR(session)} title="QR Code">
-            <AIcon path={mdiQrcode} />
-          </button>
+          {#if session.type !== 'event'}
+            <button class="text-green-600 p-1 shrink-0" onclick={() => openView(session)} title="View attendance">
+              <AIcon path={mdiAccountMultiple} />
+            </button>
+            <button class="text-indigo-500 p-1 shrink-0" onclick={() => openQR(session)} title="QR Code">
+              <AIcon path={mdiQrcode} />
+            </button>
+          {/if}
           <button class="text-red-400 p-1 shrink-0" onclick={() => deleteSession(session)}>
             <AIcon path={mdiDelete} />
           </button>
@@ -587,26 +791,67 @@
     <div class="bg-white rounded shadow-lg w-full max-w-sm">
       <div class="p-4 font-bold text-xl border-b">Add Custom Session</div>
       <div class="p-4 flex flex-col gap-4">
+        <!-- Type toggle -->
+        <div class="flex rounded border overflow-hidden text-sm font-bold">
+          <button
+            class="flex-1 py-1.5 transition-colors {addForm.type === 'training' ? 'bg-blue-500 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}"
+            onclick={() => { addForm.type = 'training'; if (!addForm.location) addForm.location = DEFAULT_LOCATION }}
+          >Training</button>
+          <button
+            class="flex-1 py-1.5 transition-colors {addForm.type === 'event' ? 'bg-sky-500 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}"
+            onclick={() => { addForm.type = 'event'; if (addForm.location === DEFAULT_LOCATION) addForm.location = '' }}
+          >Event</button>
+        </div>
         <label class="flex flex-col">
           <span class="font-bold text-sm mb-1">Date</span>
           <input type="date" class="border rounded px-2 py-1.5" bind:value={addForm.date} />
         </label>
         <div class="flex gap-3">
           <label class="flex flex-col grow">
-            <span class="font-bold text-sm mb-1">Start</span>
-            <input type="time" class="border rounded px-2 py-1.5" bind:value={addForm.startTime} />
+            <span class="font-bold text-sm mb-1">{addForm.type === 'event' ? 'Start' : 'Training Start'}</span>
+            <input type="time" class="border rounded px-2 py-1.5" bind:value={addForm.trainingStart} />
           </label>
           <label class="flex flex-col grow">
-            <span class="font-bold text-sm mb-1">End</span>
-            <input type="time" class="border rounded px-2 py-1.5" bind:value={addForm.endTime} />
+            <span class="font-bold text-sm mb-1">{addForm.type === 'event' ? 'End' : 'Training End'}</span>
+            <input type="time" class="border rounded px-2 py-1.5" bind:value={addForm.trainingEnd} />
           </label>
         </div>
+        {#if addForm.type === 'training'}
+          <p class="text-xs text-gray-400 -mt-2">QR window is ±30 min around training time</p>
+        {/if}
+        <label class="flex flex-col">
+          <span class="font-bold text-sm mb-1">Label <span class="font-normal text-gray-400">(optional)</span></span>
+          <input
+            class="border rounded px-2 py-1.5 text-sm"
+            placeholder={addForm.type === 'event' ? 'e.g. Grading, Seminar' : 'e.g. Bokuto Waza'}
+            bind:value={addForm.label}
+          />
+        </label>
+        {#if addForm.label.trim()}
+          <div class="flex gap-1.5 -mt-2">
+            {#each COLORS as c}
+              <button
+                class="w-5 h-5 rounded-full {c.swatch} {addForm.labelColor === c.key ? 'ring-2 ring-offset-1 ring-gray-400' : ''}"
+                onclick={() => addForm.labelColor = c.key}
+                aria-label={c.key}
+              ></button>
+            {/each}
+          </div>
+        {/if}
+        <label class="flex flex-col">
+          <span class="font-bold text-sm mb-1">Location <span class="font-normal text-gray-400">(optional)</span></span>
+          <input
+            class="border rounded px-2 py-1.5 text-sm"
+            placeholder="Venue"
+            bind:value={addForm.location}
+          />
+        </label>
       </div>
       <div class="p-4 border-t flex justify-end gap-2">
         <button class="px-4 py-1.5 rounded border font-bold" onclick={() => showAddModal = false}>Cancel</button>
         <button
           class="px-4 py-1.5 rounded bg-blue-500 text-white font-bold disabled:opacity-50"
-          onclick={saveCustomSession} disabled={savingSession || !addForm.date}
+          onclick={saveCustomSession} disabled={savingSession || !addForm.date || !addForm.trainingStart || !addForm.trainingEnd}
         >{savingSession ? 'Saving...' : 'Save'}</button>
       </div>
     </div>

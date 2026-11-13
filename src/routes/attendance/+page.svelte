@@ -90,13 +90,17 @@
     const map = {}
     snap.forEach(d => {
       const data  = d.data()
+      if (data.type === 'event') return
       const start = data.start.toDate()
+      const end   = data.end.toDate()
       map[dateKey(start)] = {
-        id:          d.id,
+        id:           d.id,
         start,
-        end:         data.end.toDate(),
-        attended:    d.id in attendedMap,
-        checkinTime: attendedMap[d.id] ?? null,
+        end,
+        trainingStart: data.trainingStart?.toDate() ?? new Date(start.getTime() + 30*60*1000),
+        trainingEnd:   data.trainingEnd?.toDate()   ?? new Date(end.getTime()   - 30*60*1000),
+        attended:     d.id in attendedMap,
+        checkinTime:  attendedMap[d.id] ?? null,
       }
     })
     sessionMap = map
@@ -290,7 +294,7 @@
             </div>
             <div class="grow min-w-0 whitespace-nowrap">
               <div class="font-medium text-sm">{dayLabel(s.id)}, {s.start.getDate()} {MONTH_NAMES[s.start.getMonth()]}</div>
-              <div class="text-xs text-gray-400">{fmtTime(s.start)} – {fmtTime(s.end)}</div>
+              <div class="text-xs text-gray-400">{fmtTime(s.trainingStart)} – {fmtTime(s.trainingEnd)}</div>
             </div>
             {#if s.attended && s.checkinTime}
               <div class="text-xs text-gray-400 shrink-0">checked in {fmtTime(s.checkinTime)}</div>

@@ -2,6 +2,9 @@
   "firestore": {
     "rules": "firestore.rules"
   },
+  "functions": {
+    "source": "functions"
+  },
   "hosting": {
     "public": "build",
     "ignore": [
@@ -10,6 +13,7 @@
       "**/node_modules/**"
     ],
     "rewrites": [
+      { "source": "/api/calendar.ics", "function": "calendarIcs" },
       { "source": "**", "destination": "/200.html" }
     ]
   }
