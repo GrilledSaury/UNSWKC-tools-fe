@@ -73,7 +73,21 @@
 <div class="h-screen w-screen bg-gray-100 flex flex-col items-center justify-center">
   <div class="text-2xl font-bold my-8 w-4/5 sm:w-1/2">UNSWKC-tools</div>
   <div class="flex flex-col w-4/5 sm:w-1/2 justify-center">
-    <button class="rounded my-2 p-4 bg-blue-500 text-white shadow transition-all hover:shadow-md flex items-center justify-center whitespace-nowrap font-bold text-xl" onclick={loginWithGoogle}>Sign in with Google</button>
+    <button
+      class="rounded my-2 p-4 bg-blue-500 text-white shadow transition-all hover:shadow-md flex items-center justify-center whitespace-nowrap font-bold text-xl disabled:opacity-70 disabled:cursor-not-allowed gap-3"
+      onclick={loginWithGoogle}
+      disabled={loading}
+    >
+      {#if loading}
+        <svg class="animate-spin h-5 w-5 text-white shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+        </svg>
+        Signing in…
+      {:else}
+        Sign in with Google
+      {/if}
+    </button>
     <div class="text-gray-500">Please allow pop-up windows at your first time login.</div>
     <!-- <button class="rounded my-2 text-gray-500 whitespace-nowrap">Continue without Signing in</button> -->
   </div>
