@@ -26,6 +26,67 @@ function encodeMessage(to, subject, body) {
   return Buffer.from(lines.join('\r\n')).toString('base64url')
 }
 
+const STATUS_LABELS = {
+  pending:          'Pending',
+  rejected:         'Rejected',
+  confirmed:        'Confirmed',
+  ordered:          'Ordered',
+  awaiting_payment: 'Awaiting Payment',
+  closed:           'Closed',
+}
+
+exports.notifyOrderStatus = onCall(async (request) => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required.')
+
+  const { eventId, userId, eventTitle, newStatus, adminMessage } = request.data
+  if (!eventId || !userId || !newStatus) throw new HttpsError('invalid-argument', 'Missing required fields.')
+
+  const db       = getFirestore()
+  const userSnap = await db.doc(`user/${userId}`).get()
+  if (!userSnap.exists) throw new HttpsError('not-found', 'User not found.')
+
+  const { email, name } = userSnap.data()
+  if (!email) throw new HttpsError('failed-precondition', 'User has no email address.')
+
+  const statusLabel = STATUS_LABELS[newStatus] ?? newStatus
+  const greeting    = name ? `Hi ${name},` : 'Hi,'
+
+  const bodyLines = [
+    greeting,
+    '',
+    'This is an automated message from UNSWKC Tools. Please do not reply to this email.',
+    '',
+    `Your order for "${eventTitle}" has been updated by an admin.`,
+    '',
+    `New status: ${statusLabel}`,
+  ]
+
+  if (adminMessage?.trim()) {
+    bodyLines.push('')
+    bodyLines.push('Message from admin:')
+    bodyLines.push(adminMessage.trim())
+  }
+
+  bodyLines.push(
+    '',
+    'Please log in to the app to view details or take further action:',
+    'https://unswkc-tools.web.app/orders',
+    '',
+    '—',
+    'UNSWKC Tools  |  This message was sent automatically.',
+  )
+
+  const gmail = gmailClient()
+  await gmail.users.messages.send({
+    userId: 'me',
+    requestBody: {
+      raw: encodeMessage(email, `[UNSWKC] Order update: ${statusLabel} — ${eventTitle}`, bodyLines.join('\n')),
+    },
+  })
+
+  return { success: true }
+})
+
 exports.sendTestEmail = onCall(async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'Must be signed in.')
 

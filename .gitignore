@@ -16,3 +16,5 @@ dist
 *-debug.log
 scripts/
 attendance-*.csv
+key.json
+*serviceAccount*.json

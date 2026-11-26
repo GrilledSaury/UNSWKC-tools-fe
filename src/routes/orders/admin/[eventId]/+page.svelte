@@ -1,9 +1,10 @@
 <script>
   import { onMount } from 'svelte'
-  import { db, storage } from '$lib/firebase'
+  import { db, storage, functions } from '$lib/firebase'
   import {
     doc, getDoc, getDocs, updateDoc, collection, serverTimestamp, Timestamp,
   } from 'firebase/firestore'
+  import { httpsCallable } from 'firebase/functions'
   import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
   import { slide } from 'svelte/transition'
   import { AIcon } from 'ace.svelte'
@@ -21,7 +22,11 @@
   let event    = $state(null)
   let orders   = $state([])   // [{ uid, userName, ...orderData }]
   let loading  = $state(true)
-  let expanded = $state(new Set())
+  let expanded      = $state(new Set())
+  let notifyMessage = $state('')
+  let notifyState   = $state({})   // uid → 'sending' | 'sent' | 'failed'
+
+  const notifyOrderStatus = httpsCallable(functions, 'notifyOrderStatus')
 
   function toggleExpanded(uid) {
     const next = new Set(expanded)
@@ -75,12 +80,48 @@
       .sort((a, b) => a.userName.localeCompare(b.userName))
   }
 
-  async function updateStatus(uid, status) {
+  async function handleStatusChange(uid, newStatus, selectEl) {
+    const prevStatus = orders.find(o => o.uid === uid)?.status
+    if (newStatus === prevStatus) return
+
+    const { isConfirmed, value: message } = await Swal.fire({
+      title: 'Update status & notify user',
+      input: 'textarea',
+      inputLabel: 'Message to include in email (optional)',
+      inputValue: notifyMessage,
+      inputPlaceholder: 'e.g. Your order has been confirmed. Payment invoice will follow shortly.',
+      inputAttributes: { rows: 3 },
+      showCancelButton: true,
+      confirmButtonText: 'Update & send email',
+      cancelButtonText: 'Cancel',
+      confirmButtonColor: '#374151',
+    })
+
+    if (!isConfirmed) {
+      // Revert the select back to the previous value without firing onchange
+      selectEl.value = prevStatus
+      return
+    }
+
+    notifyMessage = message ?? ''
+
     try {
-      await updateDoc(doc(db, 'events', eventId, 'orders', uid), { status, updatedAt: serverTimestamp() })
-      orders = orders.map(o => o.uid === uid ? { ...o, status, updatedAt: Timestamp.now() } : o)
+      await updateDoc(doc(db, 'events', eventId, 'orders', uid), { status: newStatus, updatedAt: serverTimestamp() })
+      orders = orders.map(o => o.uid === uid ? { ...o, status: newStatus, updatedAt: Timestamp.now() } : o)
     } catch (err) {
       Swal.fire('Error', err.message, 'error')
+      selectEl.value = prevStatus
+      return
+    }
+
+    notifyState = { ...notifyState, [uid]: 'sending' }
+    try {
+      await notifyOrderStatus({ eventId, userId: uid, eventTitle: event.title, newStatus, adminMessage: notifyMessage })
+      notifyState = { ...notifyState, [uid]: 'sent' }
+      setTimeout(() => { notifyState = { ...notifyState, [uid]: null } }, 3000)
+    } catch (err) {
+      console.error('Email notification failed:', err)
+      notifyState = { ...notifyState, [uid]: 'failed' }
     }
   }
 
@@ -273,12 +314,19 @@
               <select
                 value={order.status}
                 class="border rounded px-2 py-1.5 text-sm bg-white"
-                onchange={e => updateStatus(order.uid, e.currentTarget.value)}
+                onchange={e => handleStatusChange(order.uid, e.currentTarget.value, e.currentTarget)}
               >
                 {#each STATUSES as s}
                   <option value={s}>{STATUS_LABELS[s]}</option>
                 {/each}
               </select>
+              {#if notifyState[order.uid] === 'sending'}
+                <span class="text-xs text-gray-400">Sending email…</span>
+              {:else if notifyState[order.uid] === 'sent'}
+                <span class="text-xs text-green-600">Email sent ✓</span>
+              {:else if notifyState[order.uid] === 'failed'}
+                <span class="text-xs text-red-500">Email failed ✗</span>
+              {/if}
 
               <!-- Unlock -->
               {#if order.locked}
@@ -291,7 +339,7 @@
               {/if}
 
               <!-- Invoice -->
-              <div class="flex items-center gap-2 ml-auto">
+              <div class="flex items-center gap-2 ml-auto shrink-0">
                 {#if order.payment}
                   <a href={order.payment} target="_blank" rel="noopener noreferrer"
                      class="text-sm text-green-600 hover:underline font-semibold">Receipt ↗</a>
