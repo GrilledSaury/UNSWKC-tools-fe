@@ -72,15 +72,15 @@ exports.notifyOrderStatus = onCall(async (request) => {
     'Please log in to the app to view details or take further action:',
     'https://unswkc-tools.web.app/orders',
     '',
-    '—',
-    'UNSWKC Tools  |  This message was sent automatically.',
+    '--',
+    'UNSWKC Tools | This message was sent automatically.',
   )
 
   const gmail = gmailClient()
   await gmail.users.messages.send({
     userId: 'me',
     requestBody: {
-      raw: encodeMessage(email, `[UNSWKC] Order update: ${statusLabel} — ${eventTitle}`, bodyLines.join('\n')),
+      raw: encodeMessage(email, `[UNSWKC] Order update: ${statusLabel} - ${eventTitle}`, bodyLines.join('\n')),
     },
   })
 
