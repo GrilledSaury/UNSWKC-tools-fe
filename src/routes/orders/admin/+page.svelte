@@ -24,12 +24,12 @@
   let descTab   = $state('write')
 
   async function load() {
-    const snap = await getDocs(query(collection(db, 'events'), orderBy('dueDate', 'asc')))
+    const snap = await getDocs(query(collection(db, 'events'), orderBy('dueDate', 'desc')))
     events = snap.docs
       .map(d => ({ id: d.id, ...d.data() }))
       .sort((a, b) => {
         if (a.status !== b.status) return a.status === 'open' ? -1 : 1
-        return (a.dueDate?.toMillis() ?? 0) - (b.dueDate?.toMillis() ?? 0)
+        return (b.dueDate?.toMillis() ?? 0) - (a.dueDate?.toMillis() ?? 0)
       })
   }
 
