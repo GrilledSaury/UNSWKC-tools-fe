@@ -8,7 +8,7 @@
   import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
   import { slide } from 'svelte/transition'
   import { AIcon } from 'ace.svelte'
-  import { mdiArrowLeft, mdiLockOpen, mdiChevronDown, mdiChevronUp } from '@mdi/js'
+  import { mdiArrowLeft, mdiLockOpen, mdiChevronDown, mdiChevronUp, mdiFileDocumentOutline } from '@mdi/js'
   import { goto } from '$app/navigation'
   import { page } from '$app/stores'
   import { userProfile } from '$lib/stores'
@@ -191,6 +191,21 @@
     goto('/invoice/admin')
   }
 
+  function sendAllToInvoice() {
+    const lines = ['name,discount_pct,item,quantity,rate']
+    for (const order of orders) {
+      ;(order.items ?? []).forEach((item, i) => {
+        const price = order.itemPrices?.[i] ?? 0
+        lines.push([csvField(order.userName), 0, csvField(item.name), 1, price].join(','))
+      })
+    }
+    localStorage.setItem('pendingInvoiceImport', JSON.stringify({
+      csv:     lines.join('\n'),
+      payDesc: event.title ?? '',
+    }))
+    goto('/invoice/admin')
+  }
+
   async function setInvoice(uid, url) {
     try {
       await updateDoc(doc(db, 'events', eventId, 'orders', uid), { invoice: url, updatedAt: serverTimestamp() })
@@ -366,6 +381,14 @@
 
           </div>
         {/each}
+      </div>
+      <div class="mt-6 flex justify-end">
+        <button
+          class="flex items-center gap-1.5 bg-gray-700 text-white font-bold px-4 py-2 rounded shadow text-sm"
+          onclick={sendAllToInvoice}
+        >
+          <AIcon path={mdiFileDocumentOutline} size="16px" />Send all to invoice generator
+        </button>
       </div>
     {/if}
   {/if}

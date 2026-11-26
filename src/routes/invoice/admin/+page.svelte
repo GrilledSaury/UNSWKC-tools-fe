@@ -48,14 +48,32 @@
   let editPerson  = $state(null)
   let importError = $state('')
   let showFmt     = $state(false)
+  let draftLoaded = $state(false)
+
+  // Auto-save people to localStorage whenever they change (after initial load)
+  $effect(() => {
+    if (!draftLoaded) return
+    localStorage.setItem('invoiceDraft', JSON.stringify(people))
+  })
 
   onMount(() => {
     if (!$userProfile?.permissions?.includes('invoice')) goto('/home')
+
+    // Restore persisted draft first
+    try {
+      const draft = localStorage.getItem('invoiceDraft')
+      if (draft) people = JSON.parse(draft)
+    } catch {}
+    draftLoaded = true
+
+    // Merge any incoming data from orders page (does not replace existing people)
     const pending = localStorage.getItem('pendingInvoiceImport')
     if (pending) {
-      const data = JSON.parse(pending)
-      parseCSV(data.csv)
-      if (data.payDesc) ev.payDesc = data.payDesc
+      try {
+        const data = JSON.parse(pending)
+        mergeCSV(data.csv)
+        if (data.payDesc) ev.payDesc = data.payDesc
+      } catch {}
       localStorage.removeItem('pendingInvoiceImport')
     }
   })
@@ -103,6 +121,39 @@
       })
     }
     people = [...map.values()]
+  }
+
+  // Merges incoming CSV into existing people (adds items to matching names, appends new ones)
+  function mergeCSV(text) {
+    importError = ''
+    const lines = text.trim().split('\n').map(l => l.trim()).filter(Boolean)
+    if (lines.length < 2) return
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase())
+    const [iN, iD, iI, iQ, iR] = ['name','discount_pct','item','quantity','rate'].map(c => headers.indexOf(c))
+    if ([iN, iD, iI, iQ, iR].some(i => i === -1)) return
+
+    const incoming = new Map()
+    for (let i = 1; i < lines.length; i++) {
+      const cols = parseCSVLine(lines[i])
+      const name = cols[iN]?.trim()
+      if (!name) continue
+      if (!incoming.has(name)) incoming.set(name, { name, discountPct: parseFloat(cols[iD]) || 0, items: [] })
+      incoming.get(name).items.push({
+        desc: cols[iI]?.trim() || '',
+        qty:  parseFloat(cols[iQ]) || 1,
+        rate: parseFloat(cols[iR]) || 0,
+      })
+    }
+
+    const existing = new Map(people.map(p => [p.name, JSON.parse(JSON.stringify(p))]))
+    for (const [name, person] of incoming) {
+      if (existing.has(name)) {
+        existing.get(name).items = [...existing.get(name).items, ...person.items]
+      } else {
+        existing.set(name, person)
+      }
+    }
+    people = [...existing.values()]
   }
 
   function handleFile(e) {
@@ -318,6 +369,10 @@ Henry Black,0,Extra item,1,10.00`
         <AIcon path={mdiPrinter} size="18px" />
         Print All ({people.length})
       </button>
+      <button
+        class="text-xs text-red-400 hover:text-red-600 underline"
+        onclick={() => { people = []; localStorage.removeItem('invoiceDraft') }}
+      >Clear all</button>
     {/if}
   </div>
 
